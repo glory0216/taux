@@ -1,4 +1,5 @@
 # taux demo — VHS tape file
+# Prerequisites: bash docs/demo-setup.sh
 # Usage: vhs docs/demo.tape
 
 Output docs/demo.gif
@@ -9,58 +10,76 @@ Set Height 700
 Set Padding 10
 Set Shell zsh
 
-# Launch dashboard directly (skip tmux wrapper)
-Type "~/.local/bin/taux dashboard"
+# Hidden setup: isolate from real sessions
+Hide
+Type "export HOME=/tmp/taux-demo"
 Enter
-Sleep 3s
+Type "export PATH=$HOME/.local/bin:$PATH"
+Enter
+Type "export PS1='❯ '"
+Enter
+Type "clear"
+Enter
+Show
+Sleep 500ms
 
-# Navigate sessions — browse through active/inactive
+# 1. CLI stats — show cost tracking right away
+Type "taux get stats"
+Enter
+Sleep 3.5s
+
+# 2. Launch interactive dashboard
+Type "taux dashboard"
+Enter
+Sleep 2s
+
+# 3. Navigate sessions (j/k movement)
 Down
-Sleep 600ms
+Sleep 400ms
 Down
-Sleep 600ms
+Sleep 400ms
 Down
-Sleep 600ms
+Sleep 400ms
 Down
-Sleep 600ms
+Sleep 400ms
 Up
 Up
 Sleep 800ms
 
-# View session detail
+# 4. View session detail (tokens, tools, branch)
 Enter
 Sleep 2.5s
 Escape
-Sleep 1s
+Sleep 800ms
 
-# Switch to Stats tab
+# 5. Stats tab — cost tracking per period + model
+Tab
+Sleep 3s
+
+# 6. Projects tab — per-project aggregation
 Tab
 Sleep 2.5s
 
-# Switch to Projects tab
+# 7. Back to Sessions
 Tab
-Sleep 2.5s
+Sleep 800ms
 
-# Back to Sessions
-Tab
-Sleep 1s
-
-# Filter search by alias
+# 8. Search by alias
 Type "/"
-Sleep 500ms
+Sleep 300ms
 Type "redis"
 Sleep 1.5s
 Escape
-Sleep 800ms
+Sleep 600ms
 
-# Filter search by project
+# 9. Search by model
 Type "/"
-Sleep 500ms
-Type "ml-pipe"
+Sleep 300ms
+Type "opus"
 Sleep 1.5s
 Escape
-Sleep 1s
+Sleep 800ms
 
-# Quit
+# 10. Quit
 Type "q"
 Sleep 500ms

@@ -1,0 +1,11 @@
+<svg width="800" height="240" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="#0d1117"/>
+  <text x="50%" y="40%" dominant-baseline="middle" text-anchor="middle"
+        font-family="monospace" font-size="64" fill="#00d4ff">
+    taux
+  </text>
+  <text x="50%" y="65%" dominant-baseline="middle" text-anchor="middle"
+        font-family="monospace" font-size="20" fill="#a78bfa">
+    extend tmux for AI sessions
+  </text>
+</svg>
