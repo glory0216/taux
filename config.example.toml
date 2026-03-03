@@ -1,0 +1,51 @@
+# taux configuration
+# Copy to ~/.config/taux/config.toml and customize.
+
+[general]
+default_limit = 20    # Maximum sessions to display in list views
+cache_ttl = 10        # Cache TTL in seconds (reduces filesystem reads)
+
+[providers]
+enabled = ["claude", "cursor", "aider", "codex", "gemini"]   # Active providers
+
+[providers.claude]
+data_dir = "~/.claude"                    # Claude Code data directory
+
+[providers.cursor]
+# data_dir = ""                           # Auto-detected per platform
+                                          # macOS: ~/Library/Application Support/Cursor/User
+                                          # Linux: ~/.config/Cursor/User
+
+[providers.aider]
+scan_dir_list = ["~/Projects", "~/work"]  # Directories to scan for .aider.chat.history.md
+
+[providers.codex]
+data_dir = "~/.codex"                     # Codex CLI data directory (CODEX_HOME env var also supported)
+
+[providers.gemini]
+data_dir = "~/.gemini"                    # Gemini CLI data directory (GEMINI_HOME env var also supported)
+
+[tmux]
+status_interval = 10       # Status bar refresh interval (seconds)
+status_position = "right"  # "left" or "right"
+
+[tmux.keybinding_list]
+dashboard = "H"      # prefix + H → dashboard popup
+active_list = "A"    # prefix + A → active sessions popup
+stats = "S"          # prefix + S → stats popup
+
+[memorize]
+dir = "~/.taux/memories"   # Directory for memorized (archived) sessions
+
+[cleanup]
+default_max_age = "720h"   # Default max age for `taux clean` (720h = 30 days)
+
+# Override or add model pricing ($/MTok = dollars per million tokens)
+# Useful for new models not yet in the built-in pricing table.
+#
+# Example:
+# [pricing.override.my-custom-model]
+# input = 5.0
+# output = 25.0
+# cache_read = 0.5
+# cache_write = 6.25

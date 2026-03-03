@@ -1,0 +1,18 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "parts": [{"text": "Hello"}]
+    },
+    {
+      "role": "model",
+      "parts": [{"text": "Hi there!"}],
+      "usageMetadata": {
+        "prompt_tokens": 10,
+        "output_tokens": 20,
+        "cached_tokens": 5,
+        "total_tokens": 35
+      }
+    }
+  ]
+}

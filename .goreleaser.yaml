@@ -1,0 +1,56 @@
+version: 2
+
+project_name: taux
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: taux
+    main: ./cmd/taux
+    binary: taux
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/glory0216/taux/internal/cli.Version={{.Version}}
+      - -X github.com/glory0216/taux/internal/cli.Commit={{.ShortCommit}}
+
+archives:
+  - id: default
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  github:
+    owner: glory0216
+    name: taux
+  draft: false
+  prerelease: auto
+  name_template: "v{{.Version}}"
+  header: |
+    **taux** — extend tmux for AI sessions.
+
+    Manage, observe, and clean up your AI agent sessions — without leaving your terminal.

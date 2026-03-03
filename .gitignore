@@ -1,0 +1,22 @@
+# Build output
+bin/
+dist/
+taux
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# User config
+config.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+*.test
+*.out
+coverage.out

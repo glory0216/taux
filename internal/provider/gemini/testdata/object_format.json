@@ -1,0 +1,35 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "parts": [{"text": "Explain how goroutines work in Go"}]
+    },
+    {
+      "role": "model",
+      "parts": [{"text": "Goroutines are lightweight threads managed by the Go runtime."}],
+      "usageMetadata": {
+        "promptTokenCount": 100,
+        "candidatesTokenCount": 250,
+        "cachedContentTokenCount": 50,
+        "totalTokenCount": 400,
+        "model": "gemini-2.5-pro"
+      }
+    },
+    {
+      "role": "user",
+      "parts": [{"text": "Show me an example"}]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {"text": "Here is an example:"},
+        {"functionCall": {"name": "run_code", "args": {"code": "go func() {}()"}}}
+      ],
+      "usageMetadata": {
+        "promptTokenCount": 150,
+        "candidatesTokenCount": 300,
+        "totalTokenCount": 450
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{"type":"thread.started","timestamp":1709312400.123,"payload":{"model":"o4-mini"}}
+{"type":"item.created","timestamp":1709312401.0,"payload":{"item":{"role":"user","type":"message","content":[{"type":"input_text","text":"Fix the login bug in auth.go"}]}}}
+{"type":"item.created","timestamp":1709312402.0,"payload":{"item":{"role":"assistant","type":"message","content":[{"type":"text","text":"I'll fix the login bug."}]}}}
+{"type":"item.created","timestamp":1709312403.0,"payload":{"item":{"role":"assistant","type":"function_call","name":"edit_file","content":[]}}}
+{"type":"item.created","timestamp":1709312404.0,"payload":{"item":{"role":"assistant","type":"function_call","name":"read_file","content":[]}}}
+{"type":"item.created","timestamp":1709312405.0,"payload":{"item":{"role":"assistant","type":"function_call","name":"edit_file","content":[]}}}
+{"type":"token_count","timestamp":1709312406.0,"payload":{"input":500,"cached_input":100,"output":200,"reasoning":50,"total":850}}
+{"type":"token_count","timestamp":1709312410.0,"payload":{"input":1000,"cached_input":200,"output":400,"reasoning":100,"total":1700}}
+{"type":"turn.completed","timestamp":1709312415.999,"payload":{"model":"o4-mini"}}
