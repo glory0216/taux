@@ -8,6 +8,15 @@
 
 Thanks for your interest in contributing to taux! Bug reports, feature requests, and code contributions are all welcome.
 
+## Table of Contents
+
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [How to Contribute](#how-to-contribute)
+- [Code Style](#code-style)
+- [Adding a New Provider](#adding-a-new-provider)
+- [License](#license)
+
 ## Getting Started
 
 ```bash
@@ -123,6 +132,15 @@ All contributions are released under the [MIT License](LICENSE).
 > AI 에이전트 세션을 관리, 모니터링, 정리하세요 — 터미널을 떠나지 않고.
 
 taux에 기여해주셔서 감사합니다! 버그 리포트, 기능 제안, 코드 기여 모두 환영합니다.
+
+## 목차
+
+- [시작하기](#시작하기)
+- [프로젝트 구조](#프로젝트-구조)
+- [기여 방법](#기여-방법)
+- [코드 스타일](#코드-스타일)
+- [새 Provider 추가](#새-provider-추가)
+- [라이선스](#라이선스-1)
 
 ## 시작하기
 

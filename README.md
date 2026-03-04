@@ -12,6 +12,19 @@
 
 ---
 
+## Table of Contents
+
+- [Why taux?](#why-taux)
+- [Install](#install)
+- [Quick Start](#quick-start)
+- [How It Works](#how-it-works)
+- [Provider Support](#provider-support)
+- [Configuration](#configuration)
+- [Requirements](#requirements)
+- [License](#license)
+
+---
+
 Running multiple AI coding agents? Losing track of which sessions are alive, how many tokens you've burned, or whether that background agent is eating all your RAM?
 
 taux is a tmux-native TUI dashboard that monitors and manages AI coding agent sessions from a single pane. It's not an agent orchestrator — it focuses on **showing you what's already running**. Just like htop doesn't create processes, taux doesn't create agents.
