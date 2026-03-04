@@ -129,19 +129,15 @@ build_from_source() {
     fi
     ok "Go $(go version | sed -E 's/.*go([0-9]+\.[0-9]+\.[0-9]+).*/\1/') found"
 
-    # Detect script directory (for local clone installs)
-    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-
-    if [ -f "${SCRIPT_DIR}/cmd/taux/main.go" ]; then
-        info "Building from local source at ${SCRIPT_DIR}..."
-        cd "$SCRIPT_DIR"
-    else
-        info "Cloning repository..."
-        BUILD_TMPDIR=$(mktemp -d)
-        trap 'rm -rf "$BUILD_TMPDIR"' EXIT
-        git clone "https://github.com/${GITHUB_REPO}.git" "${BUILD_TMPDIR}/taux"
-        cd "${BUILD_TMPDIR}/taux"
+    if ! command -v git >/dev/null 2>&1; then
+        fail "git is required to clone the repository. Install git and retry."
     fi
+
+    info "Cloning repository..."
+    build_dir=$(mktemp -d)
+    trap 'rm -rf "$build_dir"' EXIT
+    git clone --depth 1 "https://github.com/${GITHUB_REPO}.git" "${build_dir}/taux"
+    cd "${build_dir}/taux"
 
     mkdir -p "${INSTALL_DIR}"
     go build -ldflags "-s -w -X github.com/glory0216/taux/internal/cli.Version=source" \
@@ -186,7 +182,7 @@ post_install() {
 main() {
     printf "\n"
     printf "${BLUE}taux installer${NC}\n"
-    printf "extend tmux for AI sessions.\n\n"
+    printf "Manage, observe, and clean up your AI agent sessions.\n\n"
 
     OS=$(detect_os)
     ARCH=$(detect_arch)
@@ -198,28 +194,38 @@ main() {
         ARCHIVE_NAME="taux_${VERSION}_${OS}_${ARCH}.tar.gz"
         BASE_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}"
 
-        TMPDIR=$(mktemp -d)
-        trap 'rm -rf "$TMPDIR"' EXIT
+        dl_dir=$(mktemp -d)
+        trap 'rm -rf "$dl_dir"' EXIT
 
         # Download archive and checksums
         info "Downloading ${ARCHIVE_NAME}..."
-        if download "${BASE_URL}/${ARCHIVE_NAME}" "${TMPDIR}/${ARCHIVE_NAME}" 2>/dev/null; then
+        if download "${BASE_URL}/${ARCHIVE_NAME}" "${dl_dir}/${ARCHIVE_NAME}" 2>/dev/null; then
             ok "Downloaded"
 
             info "Verifying checksum..."
-            download "${BASE_URL}/checksums.txt" "${TMPDIR}/checksums.txt" 2>/dev/null || true
-            if [ -f "${TMPDIR}/checksums.txt" ]; then
-                verify_checksum "${TMPDIR}/${ARCHIVE_NAME}" "${TMPDIR}/checksums.txt" "$ARCHIVE_NAME"
+            download "${BASE_URL}/checksums.txt" "${dl_dir}/checksums.txt" 2>/dev/null || true
+            if [ -f "${dl_dir}/checksums.txt" ]; then
+                verify_checksum "${dl_dir}/${ARCHIVE_NAME}" "${dl_dir}/checksums.txt" "$ARCHIVE_NAME"
             fi
 
             # Extract
             info "Extracting..."
-            tar -xzf "${TMPDIR}/${ARCHIVE_NAME}" -C "${TMPDIR}"
+            tar -xzf "${dl_dir}/${ARCHIVE_NAME}" -C "${dl_dir}"
             ok "Extracted"
+
+            # Find the binary (handles both flat and wrapped archives)
+            taux_bin=$(find "${dl_dir}" -name taux -type f -perm +111 2>/dev/null | head -1) || true
+            if [ -z "$taux_bin" ]; then
+                # fallback: look for any file named taux
+                taux_bin=$(find "${dl_dir}" -name taux -type f | head -1) || true
+            fi
+            if [ -z "$taux_bin" ]; then
+                fail "Could not find taux binary in the downloaded archive."
+            fi
 
             # Install binary
             mkdir -p "${INSTALL_DIR}"
-            cp "${TMPDIR}/taux" "${INSTALL_DIR}/taux"
+            cp "$taux_bin" "${INSTALL_DIR}/taux"
             chmod +x "${INSTALL_DIR}/taux"
             ok "Installed to ${INSTALL_DIR}/taux"
         else
