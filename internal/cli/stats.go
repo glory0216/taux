@@ -28,13 +28,15 @@ func newStatsCmd(app *App) *cobra.Command {
 			claudeDataDir := config.ExpandPath(app.Config.Providers.Claude.DataDir)
 			statsPath := filepath.Join(claudeDataDir, "stats-cache.json")
 
+			var statsCache model.StatsCache
 			data, err := os.ReadFile(statsPath)
 			if err != nil {
-				return fmt.Errorf("read stats cache: %w (run claude to generate it)", err)
-			}
-
-			var statsCache model.StatsCache
-			if err := json.Unmarshal(data, &statsCache); err != nil {
+				if !os.IsNotExist(err) {
+					return fmt.Errorf("read stats cache: %w", err)
+				}
+				// No stats cache yet — use empty stats
+				statsCache = model.StatsCache{ModelUsage: make(map[string]model.ModelUsage)}
+			} else if err := json.Unmarshal(data, &statsCache); err != nil {
 				return fmt.Errorf("parse stats cache: %w", err)
 			}
 
