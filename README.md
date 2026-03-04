@@ -54,13 +54,35 @@ Sessions pile up and eat disk space, but deleting them loses context. `taux memo
 
 ## Install
 
+### One-line installer
+
 ```bash
 curl -sSL https://raw.githubusercontent.com/glory0216/taux/main/install.sh | sh
 ```
 
 Supports macOS (Intel/Apple Silicon) and Linux (amd64/arm64). Downloads the binary, installs it, and configures tmux — all in one go.
 
-Or with Go installed:
+### TPM (Tmux Plugin Manager)
+
+Add to `~/.tmux.conf`:
+
+```tmux
+set -g @plugin 'glory0216/taux'
+```
+
+Then press `prefix + I` to install. The binary is downloaded automatically from GitHub Releases.
+
+**Options** (all optional):
+
+```tmux
+set -g @taux-key-dashboard 'H'    # Dashboard popup key (default: H)
+set -g @taux-key-sessions  'A'    # Active sessions popup key (default: A)
+set -g @taux-key-stats     'S'    # Stats popup key (default: S)
+set -g @taux-status        'on'   # Show status in status-right (default: on)
+set -g @taux-status-interval '10' # Status refresh interval in seconds (default: 10)
+```
+
+### Go install
 
 ```bash
 go install github.com/glory0216/taux/cmd/taux@latest
