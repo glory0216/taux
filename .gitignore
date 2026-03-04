@@ -12,6 +12,11 @@ taux
 # User config
 config.toml
 
+# Demo recording scripts (setup data contains fake paths)
+docs/demo.tape
+docs/demo-setup.sh
+docs/demo-teardown.sh
+
 # OS
 .DS_Store
 Thumbs.db
