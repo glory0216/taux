@@ -7,6 +7,13 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/glory0216/taux/releases"><img src="https://img.shields.io/github/v/release/glory0216/taux?style=flat-square" alt="Release"></a>
+  <a href="https://github.com/glory0216/taux/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/glory0216/taux/ci.yml?style=flat-square&label=CI" alt="CI"></a>
+  <a href="https://github.com/glory0216/taux/blob/main/LICENSE"><img src="https://img.shields.io/github/license/glory0216/taux?style=flat-square" alt="License"></a>
+  <a href="https://goreportcard.com/report/github.com/glory0216/taux"><img src="https://goreportcard.com/badge/github.com/glory0216/taux?style=flat-square" alt="Go Report Card"></a>
+</p>
+
+<p align="center">
   <a href="./README.ko.md">한국어</a>
 </p>
 

@@ -1,0 +1,28 @@
+<svg width="1280" height="640" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="#0d1117"/>
+
+  <!-- taux title -->
+  <text x="50%" y="38%" dominant-baseline="middle" text-anchor="middle"
+        font-family="monospace" font-size="96" font-weight="bold" fill="#00d4ff">
+    taux
+  </text>
+
+  <!-- Tagline -->
+  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+        font-family="monospace" font-size="28" fill="#a78bfa">
+    Manage, observe, and clean up your AI agent sessions
+  </text>
+
+  <!-- Sub-tagline -->
+  <text x="50%" y="64%" dominant-baseline="middle" text-anchor="middle"
+        font-family="monospace" font-size="22" fill="#8b949e">
+    tmux-native TUI dashboard for Claude, Cursor, Codex, Gemini, Aider
+  </text>
+
+  <!-- Bottom bar -->
+  <rect x="0" y="590" width="100%" height="50" fill="#161b22"/>
+  <text x="50%" y="620" dominant-baseline="middle" text-anchor="middle"
+        font-family="monospace" font-size="16" fill="#8b949e">
+    github.com/glory0216/taux
+  </text>
+</svg>
