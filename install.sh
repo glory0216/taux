@@ -5,6 +5,7 @@ set -eu
 GITHUB_REPO="glory0216/taux"
 INSTALL_DIR="${TAUX_INSTALL_DIR:-$HOME/.local/bin}"
 VERSION="${TAUX_VERSION:-latest}"
+PATH_NOTICE_SHOWN=0
 
 # ── Color helpers (safe for pipes) ─────────────────────────────
 if [ -t 1 ]; then
@@ -100,10 +101,9 @@ verify_checksum() {
 # ── Ensure PATH includes install dir ──────────────────────────
 ensure_path() {
     case ":${PATH}:" in
-        *":${INSTALL_DIR}:"*) return 0 ;;
+        *":${INSTALL_DIR}:"*) ok "${INSTALL_DIR} is in PATH"; return 0 ;;
     esac
 
-    warn "${INSTALL_DIR} is not in your PATH"
     shell_name="$(basename "${SHELL:-sh}")"
     case "$shell_name" in
         zsh)  profile="$HOME/.zshrc" ;;
@@ -116,7 +116,52 @@ ensure_path() {
         ok "${INSTALL_DIR} already referenced in $profile"
     else
         printf '\n# taux\n%s\n' "$export_line" >> "$profile"
-        ok "Added PATH entry to $profile -- run 'source $profile' or restart your shell"
+        ok "Added PATH entry to $profile"
+    fi
+
+    printf "\n"
+    printf "${YELLOW}  ┌─────────────────────────────────────────────────────────┐${NC}\n"
+    printf "${YELLOW}  │  ${NC}${INSTALL_DIR} is not in your current PATH.${YELLOW}          │${NC}\n"
+    printf "${YELLOW}  │                                                         │${NC}\n"
+    printf "${YELLOW}  │  ${NC}Run one of the following to start using taux:${YELLOW}          │${NC}\n"
+    printf "${YELLOW}  │                                                         │${NC}\n"
+    printf "${YELLOW}  │  ${GREEN}source ${profile}${YELLOW}$(printf '%*s' $((33 - ${#profile})) '')│${NC}\n"
+    printf "${YELLOW}  │  ${NC}or open a new terminal session${YELLOW}                        │${NC}\n"
+    printf "${YELLOW}  └─────────────────────────────────────────────────────────┘${NC}\n"
+    PATH_NOTICE_SHOWN=1
+}
+
+# ── Install tmux if missing ──────────────────────────────────
+install_tmux() {
+    os="$1"
+    info "Installing tmux..."
+
+    if [ "$os" = "darwin" ]; then
+        if command -v brew >/dev/null 2>&1; then
+            brew install tmux
+        else
+            fail "Homebrew is required to install tmux on macOS. Install from https://brew.sh"
+        fi
+    else
+        if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq tmux
+        elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y tmux
+        elif command -v yum >/dev/null 2>&1; then
+            sudo yum install -y tmux
+        elif command -v pacman >/dev/null 2>&1; then
+            sudo pacman -S --noconfirm tmux
+        elif command -v apk >/dev/null 2>&1; then
+            sudo apk add tmux
+        else
+            fail "Could not detect package manager. Install tmux manually and retry."
+        fi
+    fi
+
+    if command -v tmux >/dev/null 2>&1; then
+        ok "tmux $(tmux -V | sed 's/tmux //') installed"
+    else
+        fail "tmux installation failed"
     fi
 }
 
@@ -158,24 +203,42 @@ post_install() {
         fail "Binary verification failed"
     fi
 
-    # tmux setup (optional)
+    # tmux setup
+    if ! command -v tmux >/dev/null 2>&1; then
+        warn "tmux is not installed. taux requires tmux for full functionality."
+        printf "  Install tmux now? [Y/n] "
+        if [ -t 0 ]; then
+            read -r answer </dev/tty || answer="n"
+        else
+            answer="y"
+        fi
+        case "$answer" in
+            [nN]*) warn "Skipped tmux installation. Install later, then run: taux setup" ;;
+            *)     install_tmux "$OS" ;;
+        esac
+    fi
+
     if command -v tmux >/dev/null 2>&1; then
         info "Setting up tmux integration..."
         "${INSTALL_DIR}/taux" setup </dev/null 2>/dev/null || true
         ok "tmux configured (prefix+H for dashboard)"
-    else
-        warn "tmux not found -- install tmux later, then run: taux setup"
     fi
 
-    printf "\n${GREEN}Installation complete!${NC}\n\n"
+    printf "\n"
+    printf "  ${GREEN}╔═══════════════════════════════════════════════════╗${NC}\n"
+    printf "  ${GREEN}║           Installation complete!                  ║${NC}\n"
+    printf "  ${GREEN}╚═══════════════════════════════════════════════════╝${NC}\n"
+    printf "\n"
     printf "  Quick start:\n"
-    printf "    taux                 -- Launch dashboard\n"
-    printf "    taux get sessions    -- List all sessions\n"
-    printf "    taux get stats       -- View statistics\n\n"
-    printf "  In tmux:\n"
-    printf "    prefix + H           -- Dashboard popup\n"
-    printf "    prefix + A           -- Active sessions popup\n"
-    printf "    prefix + S           -- Stats popup\n\n"
+    printf "    ${GREEN}taux${NC}                 Launch dashboard\n"
+    printf "    ${GREEN}taux get sessions${NC}    List all sessions\n"
+    printf "    ${GREEN}taux get stats${NC}       View statistics\n"
+    printf "\n"
+    printf "  tmux shortcuts:\n"
+    printf "    ${GREEN}prefix + H${NC}           Dashboard popup\n"
+    printf "    ${GREEN}prefix + A${NC}           Active sessions popup\n"
+    printf "    ${GREEN}prefix + S${NC}           Stats popup\n"
+    printf "\n"
 }
 
 # ── Main ──────────────────────────────────────────────────────
