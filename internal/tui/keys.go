@@ -23,6 +23,7 @@ type keyMap struct {
 	CleanBroken  key.Binding
 	CleanOld     key.Binding
 	Rename       key.Binding
+	Replay       key.Binding
 }
 
 var defaultKeyMap = keyMap{
@@ -105,5 +106,9 @@ var defaultKeyMap = keyMap{
 	Rename: key.NewBinding(
 		key.WithKeys("n"),
 		key.WithHelp("n", "rename"),
+	),
+	Replay: key.NewBinding(
+		key.WithKeys("R"),
+		key.WithHelp("R", "replay"),
 	),
 }

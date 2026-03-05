@@ -62,6 +62,18 @@ When an agent session finishes, taux sends a `tmux display-message` notification
 
 Disable with `notify_completion = false` in config or `set -g @taux-notify 'off'` in tmux.
 
+### Activity chart
+
+`taux get stats` and the dashboard Stats tab show a 14-day bar chart of daily message activity. See your AI usage trends at a glance — no external dashboards needed.
+
+### replay — browse conversations in the terminal
+
+`taux replay <id>` opens a scrollable TUI viewer for any session's conversation. User/assistant/tool turns are color-coded, tool calls are collapsible with `t`, and you can scroll with vim keys. In the dashboard, press `R` to replay the selected session.
+
+### Task progress tracking
+
+When a session uses `TodoWrite`, `taux describe <id>` shows the task completion status with a checklist. Quickly see whether an agent finished its planned work.
+
 ## Install
 
 ### One-line installer
@@ -113,8 +125,9 @@ That's it. One command.
 ```bash
 taux get sessions         # List all sessions (with git branch)
 taux get projects         # Per-project aggregated stats
-taux get stats            # Token usage, cache breakdown, disk usage
-taux describe <id>        # Full session detail
+taux get stats            # Token usage, cache breakdown, activity chart
+taux describe <id>        # Full session detail (with task progress)
+taux replay <id>          # Browse conversation in scrollable TUI
 taux attach <id>          # Resume a session in tmux pane
 taux kill <id>            # SIGTERM
 taux memorize <id>        # Export to markdown, then delete
@@ -146,6 +159,7 @@ taux clean --broken       # Remove corrupted sessions
 | `j/k`, `↑/↓` | Navigate |
 | `Tab` / `Shift+Tab` | Switch tabs (Sessions / Stats / Projects) |
 | `Enter` | Detail view |
+| `R` | Replay conversation (scrollable viewer) |
 | `a` | Attach to session |
 | `K` | Kill (with y/N confirm) |
 | `M` | Memorize & delete (archive, then remove) |

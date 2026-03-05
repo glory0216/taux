@@ -62,7 +62,7 @@ func newStatsCmd(app *App) *cobra.Command {
 				stats.SupplementToday(agg, sessionList, claudeDataDir, claudeTodayTokens)
 			}
 
-			printStats(agg, period)
+			printStats(&statsCache, agg, period)
 			return nil
 		},
 	}
@@ -84,7 +84,7 @@ func claudeTodayTokens(dataDir string) stats.TodayTokens {
 }
 
 // printStats renders the stats to stdout.
-func printStats(agg *model.AggregatedStats, period string) {
+func printStats(statsCache *model.StatsCache, agg *model.AggregatedStats, period string) {
 	fmt.Println("\033[1m═══ taux Stats ═══\033[0m")
 	fmt.Println()
 
@@ -128,6 +128,17 @@ func printStats(agg *model.AggregatedStats, period string) {
 	}
 
 	w.Flush()
+
+	// Daily Activity Chart (14 days)
+	if len(statsCache.DailyActivity) > 0 {
+		fmt.Println()
+		fmt.Println("\033[1mDaily Activity (14 days)\033[0m")
+		pointList := stats.BuildDailyPoints(statsCache, 14, agg)
+		chartLineList := stats.RenderBarChart(pointList, "messages", 40)
+		for _, line := range chartLineList {
+			fmt.Println(line)
+		}
+	}
 
 	// Model breakdown
 	if len(agg.ModelBreakdown) > 0 {

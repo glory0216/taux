@@ -112,6 +112,7 @@ func NewRootCmd() *cobra.Command {
 		newGetCmd(app),       // taux get [sessions|projects|stats]
 		newDescribeCmd(app),  // taux describe <id>
 		newLogsCmd(app),      // taux logs <id>
+		newReplayCmd(app),    // taux replay <id>
 		newAttachCmd(app),    // taux attach <id>
 		newKillCmd(app),      // taux kill <id>
 		newDeleteCmd(app),    // taux delete <id>

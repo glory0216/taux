@@ -125,6 +125,40 @@ func RenderSessionDetail(detail *model.SessionDetail, width, height int) string 
 		lineList = append(lineList, renderDetailRow("Agent", detail.AgentName))
 	}
 
+	// Task progress (from TodoWrite)
+	if len(detail.TaskList) > 0 {
+		completed := 0
+		for _, t := range detail.TaskList {
+			if t.Status == "completed" {
+				completed++
+			}
+		}
+
+		taskSummary := fmt.Sprintf("%d/%d completed", completed, len(detail.TaskList))
+		lineList = append(lineList, renderDetailRow("Tasks", taskSummary))
+
+		doneStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#22C55E"))
+		progStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FBBF24"))
+		pendStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#6B7280"))
+
+		for _, t := range detail.TaskList {
+			var icon string
+			switch t.Status {
+			case "completed":
+				icon = doneStyle.Render("\u2713")
+			case "in_progress":
+				icon = progStyle.Render("\u25d0")
+			default:
+				icon = pendStyle.Render("\u25cb")
+			}
+			subject := t.Subject
+			if len([]rune(subject)) > 60 {
+				subject = string([]rune(subject)[:57]) + "..."
+			}
+			lineList = append(lineList, "              "+icon+" "+subject)
+		}
+	}
+
 	// Source file
 	if detail.FilePath != "" {
 		lineList = append(lineList, renderDetailRow("Source", detail.FilePath))

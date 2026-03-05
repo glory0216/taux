@@ -101,6 +101,14 @@ type AttachRequest struct {
 	Alias     string // tmux window name (empty → falls back to short session ID)
 }
 
+// ReplayRequest is exported so the caller can launch the replay TUI after dashboard exits.
+type ReplayRequest struct {
+	SessionID string
+	FilePath  string
+	Project   string
+	Model     string
+}
+
 // Model is the main bubbletea model for the TUI dashboard.
 type Model struct {
 	registry *provider.Registry
@@ -162,11 +170,19 @@ type Model struct {
 
 	// Attach request (set before quitting to signal attach)
 	attachRequest *AttachRequest
+
+	// Replay request (set before quitting to signal replay)
+	replayRequest *ReplayRequest
 }
 
 // GetAttachRequest returns the attach request if the user chose to attach.
 func (m *Model) GetAttachRequest() *AttachRequest {
 	return m.attachRequest
+}
+
+// GetReplayRequest returns the replay request if the user chose to replay.
+func (m *Model) GetReplayRequest() *ReplayRequest {
+	return m.replayRequest
 }
 
 // NewModel creates a new TUI model.
@@ -512,6 +528,26 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.attachRequest = &AttachRequest{
 					SessionID: s.ID,
 					Alias:     config.GetAlias(m.aliasMap, s.ID),
+				}
+				return m, tea.Quit
+			}
+		}
+		return m, nil
+
+	case matchKey(msg, m.keys.Replay):
+		if m.activeTab == tabSessions && m.viewMode == viewList {
+			filtered := m.filteredSessionList()
+			if m.cursor >= 0 && m.cursor < len(filtered) {
+				s := filtered[m.cursor]
+				if s.FilePath == "" {
+					m.statusText = "No file path for this session"
+					return m, nil
+				}
+				m.replayRequest = &ReplayRequest{
+					SessionID: s.ID,
+					FilePath:  s.FilePath,
+					Project:   s.Project,
+					Model:     s.Model,
 				}
 				return m, tea.Quit
 			}

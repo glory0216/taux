@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/glory0216/taux/internal/model"
+	statsutil "github.com/glory0216/taux/internal/stats"
 )
 
 var (
@@ -82,6 +84,51 @@ func RenderStatsPanel(stats *model.StatsCache, agg *model.AggregatedStats, diskU
 			agg.TotalSessions, formatNumber(agg.TotalMessages), formatTokenCount(allTimeTokens), totalCostStr)))
 
 	lineList = append(lineList, "")
+
+	// Daily Activity Chart (14 days)
+	if stats != nil && len(stats.DailyActivity) > 0 {
+		lineList = append(lineList, statsHeaderStyle.Render("  Daily Activity (14 days)"))
+		lineList = append(lineList, "")
+
+		chartBarWidth := width - 30
+		if chartBarWidth < 10 {
+			chartBarWidth = 10
+		}
+		if chartBarWidth > 50 {
+			chartBarWidth = 50
+		}
+
+		pointList := statsutil.BuildDailyPoints(stats, 14, agg)
+
+		barStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#22C55E"))
+		dateStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#9CA3AF"))
+		valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#D1D5DB"))
+
+		// Find max
+		maxVal := 0
+		for _, p := range pointList {
+			if p.Messages > maxVal {
+				maxVal = p.Messages
+			}
+		}
+
+		for _, p := range pointList {
+			barLen := 0
+			if maxVal > 0 {
+				barLen = (p.Messages * chartBarWidth) / maxVal
+			}
+			bar := strings.Repeat("\u2588", barLen)
+
+			t, _ := time.Parse("2006-01-02", p.Date)
+			label := t.Format("Mon 01/02")
+
+			valStr := formatNumber(p.Messages)
+			lineList = append(lineList,
+				"  "+dateStyle.Render(label)+"  "+barStyle.Render(bar)+" "+valStyle.Render(valStr))
+		}
+
+		lineList = append(lineList, "")
+	}
 
 	// Model Breakdown
 	if agg.ModelBreakdown != nil && len(agg.ModelBreakdown) > 0 {

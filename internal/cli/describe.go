@@ -109,6 +109,26 @@ func newDescribeCmd(app *App) *cobra.Command {
 
 			fmt.Printf("Size:     %s\n", formatSize(detail.FileSize))
 
+			// Task progress (from TodoWrite)
+			if len(detail.TaskList) > 0 {
+				completed := 0
+				for _, t := range detail.TaskList {
+					if t.Status == "completed" {
+						completed++
+					}
+				}
+				fmt.Printf("Tasks:    %d/%d completed\n", completed, len(detail.TaskList))
+				for _, t := range detail.TaskList {
+					icon := "\u25cb" // ○ pending
+					if t.Status == "completed" {
+						icon = "\033[32m\u2713\033[0m" // ✓ green
+					} else if t.Status == "in_progress" {
+						icon = "\033[33m\u25d0\033[0m" // ◐ yellow
+					}
+					fmt.Printf("          %s %s\n", icon, t.Subject)
+				}
+			}
+
 			// Team info
 			if detail.TeamName != "" {
 				fmt.Printf("Team:     %s\n", detail.TeamName)

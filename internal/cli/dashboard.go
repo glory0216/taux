@@ -39,6 +39,17 @@ func runDashboard(app *App) error {
 			return nil
 		}
 
+		// Check for replay request first
+		replayReq := finalModel.GetReplayRequest()
+		if replayReq != nil {
+			if err := runReplayInline(replayReq); err != nil {
+				// On error, loop back to dashboard
+				continue
+			}
+			// After replay finishes, loop back to dashboard
+			continue
+		}
+
 		req := finalModel.GetAttachRequest()
 		if req == nil {
 			// Normal quit — no attach
@@ -69,6 +80,27 @@ func runDashboard(app *App) error {
 		}
 		// Loop back → dashboard restarts in this window
 	}
+}
+
+// runReplayInline launches the replay TUI inline (same terminal).
+func runReplayInline(req *tui.ReplayRequest) error {
+	turnList, err := parseConversation(req.FilePath, false)
+	if err != nil {
+		return err
+	}
+	if len(turnList) == 0 {
+		return nil
+	}
+
+	shortID := req.SessionID
+	if len(shortID) > 6 {
+		shortID = shortID[:6]
+	}
+
+	m := newReplayModel(turnList, shortID, req.Project, req.Model)
+	p := tea.NewProgram(m, tea.WithAltScreen())
+	_, err = p.Run()
+	return err
 }
 
 // tmuxNewWindowAttach opens a new tmux window with the attach command.

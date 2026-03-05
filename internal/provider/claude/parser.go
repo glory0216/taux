@@ -176,8 +176,40 @@ func parseAssistantRecord(raw json.RawMessage, detail *model.SessionDetail) {
 			if block.Name != "" {
 				detail.ToolUsage[block.Name]++
 			}
+			// Extract task list from TodoWrite (last call wins)
+			if block.Name == "TodoWrite" && block.Input != nil {
+				parseTodoWrite(block.Input, detail)
+			}
 		}
 	}
+}
+
+// parseTodoWrite extracts the task list from a TodoWrite tool_use input.
+// Each call replaces the entire task list (last write wins).
+func parseTodoWrite(input json.RawMessage, detail *model.SessionDetail) {
+	var todoInput struct {
+		Todos []struct {
+			ID      string `json:"id"`
+			Content string `json:"content"`
+			Status  string `json:"status"` // "pending", "in_progress", "completed"
+		} `json:"todos"`
+	}
+	if err := json.Unmarshal(input, &todoInput); err != nil {
+		return
+	}
+	if len(todoInput.Todos) == 0 {
+		return
+	}
+
+	taskList := make([]model.Task, 0, len(todoInput.Todos))
+	for _, t := range todoInput.Todos {
+		taskList = append(taskList, model.Task{
+			ID:      t.ID,
+			Subject: t.Content,
+			Status:  t.Status,
+		})
+	}
+	detail.TaskList = taskList
 }
 
 // quickMetadata holds metadata extracted from a single pass over early lines.
