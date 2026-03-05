@@ -38,6 +38,7 @@ func RenderSessionList(sessionList []model.Session, aliasMap map[string]string, 
 	colProv := 7
 	colProject := 12
 	colModel := 12
+	colBranch := 8
 	colMsgs := 6
 	colSize := 8
 	colMem := 7
@@ -45,7 +46,7 @@ func RenderSessionList(sessionList []model.Session, aliasMap map[string]string, 
 	colAge := 5
 
 	// Header
-	header := fmt.Sprintf("  %-*s %-*s %-*s %-*s %-*s %-*s %-*s %*s %*s %*s %*s %*s",
+	header := fmt.Sprintf("  %-*s %-*s %-*s %-*s %-*s %-*s %-*s %-*s %*s %*s %*s %*s %*s",
 		colStatus, "",
 		colID, "ID",
 		colAlias, "ALIAS",
@@ -53,6 +54,7 @@ func RenderSessionList(sessionList []model.Session, aliasMap map[string]string, 
 		colProv, "PROV",
 		colProject, "PROJECT",
 		colModel, "MODEL",
+		colBranch, "BRANCH",
 		colMsgs, "MSGS",
 		colSize, "SIZE",
 		colMem, "MEM",
@@ -129,7 +131,7 @@ func RenderSessionList(sessionList []model.Session, aliasMap map[string]string, 
 		// Provider
 		provField := fmt.Sprintf("%-*s", colProv, truncate(s.Provider, colProv))
 
-		row := fmt.Sprintf("%s %-*s %s %s %s %-*s %-*s %*d %*s %*s %*s %*s",
+		row := fmt.Sprintf("%s %-*s %s %s %s %-*s %-*s %-*s %*d %*s %*s %*s %*s",
 			icon,
 			colID, s.ShortID,
 			aliasField,
@@ -137,6 +139,7 @@ func RenderSessionList(sessionList []model.Session, aliasMap map[string]string, 
 			provField,
 			colProject, truncate(s.Project, colProject),
 			colModel, truncate(shortenModel(s.Model), colModel),
+			colBranch, truncate(s.GitBranch, colBranch),
 			colMsgs, s.MessageCount,
 			colSize, formatSizeShort(s.FileSize),
 			colMem, memStr,

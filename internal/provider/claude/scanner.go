@@ -92,6 +92,7 @@ func scanSingleSession(path string, projectsDir string) (*model.Session, error) 
 		Description:  meta.Description,
 		Environment:  meta.Environment,
 		CWD:          meta.CWD,
+		GitBranch:    meta.GitBranch,
 		MessageCount: msgCount,
 		StartedAt:    meta.FirstTimestamp,
 		LastActive:   lastTimestamp,

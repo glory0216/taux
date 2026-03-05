@@ -21,8 +21,9 @@ type Config struct {
 }
 
 type GeneralConfig struct {
-	DefaultLimit int `toml:"default_limit"`
-	CacheTTL     int `toml:"cache_ttl"`
+	DefaultLimit       int  `toml:"default_limit"`
+	CacheTTL           int  `toml:"cache_ttl"`
+	NotifyCompletion   bool `toml:"notify_completion"`
 }
 
 type ProvidersConfig struct {
@@ -117,8 +118,9 @@ func (pc *PricingConfig) ToTokenPriceMap() map[string]pricing.TokenPrice {
 func DefaultConfig() *Config {
 	return &Config{
 		General: GeneralConfig{
-			DefaultLimit: 20,
-			CacheTTL:     10,
+			DefaultLimit:     20,
+			CacheTTL:         10,
+			NotifyCompletion: true,
 		},
 		Providers: ProvidersConfig{
 			Enabled: []string{"claude", "cursor", "aider", "codex", "gemini"},

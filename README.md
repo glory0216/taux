@@ -52,6 +52,16 @@ Other tools wrap tmux and impose a new workflow. taux dissolves into the tmux yo
 
 Sessions pile up and eat disk space, but deleting them loses context. `taux memorize` exports the conversation to markdown, then removes the original. You keep a reference copy while reclaiming storage.
 
+### Git branch awareness
+
+The dashboard and `taux get sessions` show the git branch each session is running on. Claude Code sessions read it from JSONL metadata; other providers detect it from the project directory.
+
+### Session completion notification
+
+When an agent session finishes, taux sends a `tmux display-message` notification within one status refresh cycle (default 10s). No separate daemon needed — the existing `taux status` command tracks active sessions and detects when they disappear.
+
+Disable with `notify_completion = false` in config or `set -g @taux-notify 'off'` in tmux.
+
 ## Install
 
 ### One-line installer
@@ -80,6 +90,7 @@ set -g @taux-key-sessions  'A'    # Active sessions popup key (default: A)
 set -g @taux-key-stats     'S'    # Stats popup key (default: S)
 set -g @taux-status        'on'   # Show status in status-right (default: on)
 set -g @taux-status-interval '10' # Status refresh interval in seconds (default: 10)
+set -g @taux-notify        'on'   # Notify on session completion (default: on)
 ```
 
 ### Go install
@@ -100,7 +111,7 @@ That's it. One command.
 ### CLI (kubectl-style)
 
 ```bash
-taux get sessions         # List all sessions
+taux get sessions         # List all sessions (with git branch)
 taux get projects         # Per-project aggregated stats
 taux get stats            # Token usage, cache breakdown, disk usage
 taux describe <id>        # Full session detail
@@ -173,6 +184,7 @@ taux clean --broken       # Remove corrupted sessions
 [general]
 default_limit = 20
 cache_ttl = 10
+notify_completion = true   # tmux display-message when a session completes
 
 [providers]
 enabled = ["claude", "cursor", "aider"]

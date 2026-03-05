@@ -59,6 +59,11 @@ type PopupOpts struct {
 	Command string
 }
 
+// DisplayMessage shows a brief message on the tmux status line.
+func DisplayMessage(msg string) error {
+	return exec.Command("tmux", "display-message", msg).Run()
+}
+
 // ListSession returns current tmux sessions.
 func ListSession() ([]TmuxSession, error) {
 	out, err := exec.Command("tmux", "list-sessions", "-F",

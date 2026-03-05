@@ -54,6 +54,13 @@ func (p *Provider) ListSession(ctx context.Context, filter provider.Filter) ([]m
 		return nil, fmt.Errorf("scan aider sessions: %w", err)
 	}
 
+	// Detect git branch for sessions with a project path
+	for i := range sessionList {
+		if sessionList[i].GitBranch == "" && sessionList[i].ProjectPath != "" {
+			sessionList[i].GitBranch = provider.DetectGitBranch(sessionList[i].ProjectPath)
+		}
+	}
+
 	// Enrich with process info
 	procList, _ := FindAiderProcess()
 	if len(procList) > 0 && len(sessionList) > 0 {

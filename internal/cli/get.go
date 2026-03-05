@@ -80,7 +80,7 @@ func newGetSessionsCmd(app *App) *cobra.Command {
 			aliasMap := config.LoadAlias(configDir)
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
-			fmt.Fprintln(w, "ID\tALIAS\tSTATUS\tENV\tPROJECT\tMODEL\tMSGS\tSIZE\tMEM\tCPU\tAGE\tDESCRIPTION")
+			fmt.Fprintln(w, "ID\tALIAS\tSTATUS\tENV\tPROJECT\tMODEL\tBRANCH\tMSGS\tSIZE\tMEM\tCPU\tAGE\tDESCRIPTION")
 
 			now := time.Now()
 			for _, s := range sessionList {
@@ -108,13 +108,19 @@ func newGetSessionsCmd(app *App) *cobra.Command {
 					desc = string([]rune(desc)[:47]) + "..."
 				}
 
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+				branchStr := s.GitBranch
+				if len([]rune(branchStr)) > 16 {
+					branchStr = string([]rune(branchStr)[:15]) + "\u2026"
+				}
+
+				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
 					s.ShortID,
 					alias,
 					statusStr,
 					envStr,
 					s.Project,
 					modelStr,
+					branchStr,
 					s.MessageCount,
 					formatSizeShort(s.FileSize),
 					memStr,

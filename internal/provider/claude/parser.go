@@ -186,6 +186,7 @@ type quickMetadata struct {
 	Description    string
 	Environment    string
 	CWD            string
+	GitBranch      string
 	FirstTimestamp time.Time
 }
 
@@ -228,6 +229,11 @@ func extractQuickMetadata(path string) quickMetadata {
 		// CWD from first record that has it
 		if meta.CWD == "" && rec.CWD != "" {
 			meta.CWD = rec.CWD
+		}
+
+		// GitBranch from first record that has it
+		if meta.GitBranch == "" && rec.GitBranch != "" {
+			meta.GitBranch = rec.GitBranch
 		}
 
 		// Model: from first assistant message
@@ -274,7 +280,7 @@ func extractQuickMetadata(path string) quickMetadata {
 		}
 
 		// Early exit if all found
-		if meta.Model != "" && meta.Description != "" && meta.Environment == "ide" {
+		if meta.Model != "" && meta.Description != "" && meta.Environment == "ide" && meta.GitBranch != "" {
 			break
 		}
 	}

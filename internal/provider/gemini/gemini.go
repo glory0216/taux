@@ -59,6 +59,13 @@ func (p *Provider) ListSession(ctx context.Context, filter provider.Filter) ([]m
 		return nil, fmt.Errorf("scan sessions: %w", err)
 	}
 
+	// Detect git branch for sessions with a project path
+	for i := range sessionList {
+		if sessionList[i].GitBranch == "" && sessionList[i].ProjectPath != "" {
+			sessionList[i].GitBranch = provider.DetectGitBranch(sessionList[i].ProjectPath)
+		}
+	}
+
 	// Enrich with process info (best-effort: Gemini CLI doesn't expose session IDs)
 	// Mark one session per running Gemini process, starting from most recent
 	activeProcessList, _ := FindActiveProcess()

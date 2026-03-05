@@ -22,6 +22,7 @@ type Session struct {
 	Description  string        `json:"description"`
 	Environment  string        `json:"environment"` // "cli", "ide" (Cursor/VSCode)
 	CWD          string        `json:"cwd"`
+	GitBranch    string        `json:"git_branch"`
 	MessageCount int           `json:"message_count"`
 	StartedAt    time.Time     `json:"started_at"`
 	LastActive   time.Time     `json:"last_active"`

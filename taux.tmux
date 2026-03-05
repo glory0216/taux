@@ -8,6 +8,7 @@
 #   @taux-key-stats       Stats popup key            (default: S)
 #   @taux-status          Show status in status-right (default: on)
 #   @taux-status-interval Status refresh interval     (default: 10)
+#   @taux-notify          Notify on session completion (default: on)
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

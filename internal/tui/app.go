@@ -260,6 +260,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.providerStatus = msg.status
 		return m, nil
 
+	case aliasMoveMsg:
+		delete(m.aliasMap, msg.oldSID)
+		m.applyAlias(msg.newSID, msg.alias)
+		return m, nil
+
 	case killResultMsg:
 		if msg.err != nil {
 			m.statusText = "Kill failed: " + msg.err.Error()
@@ -585,19 +590,28 @@ func (m *Model) handleRenameKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 		if alias == "" {
 			// Remove alias
-			delete(m.aliasMap, sid)
-		} else {
-			m.aliasMap[sid] = alias
+			m.applyAlias(sid, "")
+			return m, nil
 		}
 
-		configDir := filepath.Dir(config.ConfigPath())
-		if err := config.SaveAlias(configDir, m.aliasMap); err != nil {
-			m.statusText = "Save alias failed: " + err.Error()
-		} else if alias == "" {
-			m.statusText = "Alias removed"
-		} else {
-			m.statusText = "Alias set: " + alias
+		// Check for duplicate alias on a different session
+		if existingSID := m.findSessionByAlias(alias); existingSID != "" && existingSID != sid {
+			existingShort := existingSID
+			if len(existingShort) > 6 {
+				existingShort = existingShort[:6]
+			}
+			// Capture values for the confirm closure
+			newSID, newAlias := sid, alias
+			m.setConfirm(
+				fmt.Sprintf("\"%s\" already used by %s. Move? [y/N]", alias, existingShort),
+				func() tea.Msg {
+					return aliasMoveMsg{oldSID: existingSID, newSID: newSID, alias: newAlias}
+				},
+			)
+			return m, nil
 		}
+
+		m.applyAlias(sid, alias)
 		return m, nil
 	case tea.KeyBackspace:
 		if len(m.renameText) > 0 {
@@ -609,6 +623,41 @@ func (m *Model) handleRenameKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.renameText += string(msg.Runes)
 		}
 		return m, nil
+	}
+}
+
+// aliasMoveMsg is dispatched when the user confirms moving an alias from one session to another.
+type aliasMoveMsg struct {
+	oldSID string
+	newSID string
+	alias  string
+}
+
+// findSessionByAlias returns the session ID that currently holds the given alias, or "".
+func (m *Model) findSessionByAlias(alias string) string {
+	for sid, a := range m.aliasMap {
+		if a == alias {
+			return sid
+		}
+	}
+	return ""
+}
+
+// applyAlias sets or removes an alias and persists to disk.
+func (m *Model) applyAlias(sid, alias string) {
+	if alias == "" {
+		delete(m.aliasMap, sid)
+	} else {
+		m.aliasMap[sid] = alias
+	}
+
+	configDir := filepath.Dir(config.ConfigPath())
+	if err := config.SaveAlias(configDir, m.aliasMap); err != nil {
+		m.statusText = "Save alias failed: " + err.Error()
+	} else if alias == "" {
+		m.statusText = "Alias removed"
+	} else {
+		m.statusText = "Alias set: " + alias
 	}
 }
 
