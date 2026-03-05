@@ -201,6 +201,7 @@ func NewModel(registry *provider.Registry, cfg *config.Config, version string) *
 func (m *Model) Init() tea.Cmd {
 	m.loading = true
 	return tea.Batch(
+		tea.ClearScreen,
 		m.loadSessionList(),
 		m.loadStats(),
 		m.loadStatus(),
@@ -523,6 +524,14 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				s := filtered[m.cursor]
 				if s.Environment == "ide" {
 					m.statusText = "Cannot attach: IDE session (use Cursor/VSCode)"
+					return m, nil
+				}
+				if isBrokenSession(s) {
+					sid := s.ID
+					m.setConfirm(
+						fmt.Sprintf("Broken session %s. Delete it? [y/N]", s.ShortID),
+						m.deleteSession(sid),
+					)
 					return m, nil
 				}
 				m.attachRequest = &AttachRequest{
@@ -1101,6 +1110,21 @@ func (m *Model) cleanBrokenSessions() tea.Cmd {
 		}
 		return cleanBrokenResultMsg{deleted: deleted}
 	}
+}
+
+// isBrokenSession returns true if a session has broken/missing timestamps.
+func isBrokenSession(s model.Session) bool {
+	cutoff := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	if s.StartedAt.IsZero() && s.LastActive.IsZero() {
+		return true
+	}
+	if !s.StartedAt.IsZero() && s.StartedAt.Before(cutoff) {
+		return true
+	}
+	if s.StartedAt.IsZero() && !s.LastActive.IsZero() && s.LastActive.Before(cutoff) {
+		return true
+	}
+	return false
 }
 
 func (m *Model) cleanOldSessions(days int) tea.Cmd {

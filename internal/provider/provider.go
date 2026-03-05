@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"sort"
 
 	"github.com/glory0216/taux/internal/model"
 )
@@ -106,5 +107,24 @@ func (r *Registry) AllSession(ctx context.Context, filter Filter) ([]model.Sessi
 		}
 		all = append(all, list...)
 	}
+
+	// Sort: active first, then by LastActive descending
+	sort.Slice(all, func(i, j int) bool {
+		ai := all[i].Status == model.SessionActive
+		aj := all[j].Status == model.SessionActive
+		if ai != aj {
+			return ai
+		}
+		ti := all[i].LastActive
+		if ti.IsZero() {
+			ti = all[i].StartedAt
+		}
+		tj := all[j].LastActive
+		if tj.IsZero() {
+			tj = all[j].StartedAt
+		}
+		return ti.After(tj)
+	})
+
 	return all, nil
 }

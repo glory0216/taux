@@ -1,7 +1,9 @@
 package tmux
 
 import (
+	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -93,4 +95,50 @@ type TmuxSession struct {
 	Name     string
 	Windows  string
 	Attached bool
+}
+
+// PaneInfo holds tmux pane details for process-to-window mapping.
+type PaneInfo struct {
+	PanePID     int
+	WindowID    string // e.g., "@1"
+	WindowName  string
+	SessionName string
+}
+
+// ListPane returns all tmux panes with their PIDs and window info.
+func ListPane() ([]PaneInfo, error) {
+	out, err := exec.Command("tmux", "list-panes", "-a", "-F",
+		"#{pane_pid}\t#{window_id}\t#{window_name}\t#{session_name}").Output()
+	if err != nil {
+		return nil, err
+	}
+	var list []PaneInfo
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line == "" {
+			continue
+		}
+		partList := strings.SplitN(line, "\t", 4)
+		if len(partList) < 4 {
+			continue
+		}
+		pid, err := strconv.Atoi(partList[0])
+		if err != nil {
+			continue
+		}
+		list = append(list, PaneInfo{
+			PanePID:     pid,
+			WindowID:    partList[1],
+			WindowName:  partList[2],
+			SessionName: partList[3],
+		})
+	}
+	return list, nil
+}
+
+// AlertWindow sends a bell character to trigger window tab highlighting.
+// Requires visual-bell or monitor-bell to be on in tmux.
+func AlertWindow(windowID string) error {
+	// Send bell via run-shell (writes \a to the pane)
+	return exec.Command("tmux", "run-shell", "-t", windowID,
+		fmt.Sprintf("printf '\\a'")).Run()
 }

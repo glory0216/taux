@@ -5,20 +5,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/glory0216/taux/internal/config"
-	"github.com/glory0216/taux/internal/model"
-	"github.com/glory0216/taux/internal/pricing"
 	"github.com/glory0216/taux/internal/provider/claude"
 	"github.com/glory0216/taux/internal/tmux"
 )
 
-// watchState persists active session IDs between taux status invocations.
+// watchState persists active session IDs and alerted states between invocations.
 type watchState struct {
-	ActiveIDList []string `json:"active_ids"`
+	ActiveIDList  []string `json:"active_ids"`
+	WaitingIDList []string `json:"waiting_ids"` // sessions already alerted as waiting
 }
 
 func newStatusCmd(app *App) *cobra.Command {
@@ -29,77 +27,20 @@ func newStatusCmd(app *App) *cobra.Command {
 		RunE: func(_ *cobra.Command, _ []string) error {
 			claudeDataDir := config.ExpandPath(app.Config.Providers.Claude.DataDir)
 
-			// Read stats-cache.json (fast file read, no JSONL parsing)
-			statsPath := filepath.Join(claudeDataDir, "stats-cache.json")
-			data, err := os.ReadFile(statsPath)
-			if err != nil {
-				fmt.Print("#[fg=colour242]\u25cb#[fg=default]")
-				return nil
-			}
-
-			var statsCache model.StatsCache
-			if err := json.Unmarshal(data, &statsCache); err != nil {
-				fmt.Print("#[fg=colour242]\u25cb#[fg=default]")
-				return nil
-			}
-
-			// Count active processes (ps is fast)
+			// Count active processes
 			activeList, _ := claude.FindActiveProcess()
 			activeCount := len(activeList)
 
-			// Session completion notification
+			// Notification: completion + input waiting
 			if app.Config.General.NotifyCompletion {
-				notifyCompletedSession(activeList, claudeDataDir, app)
+				notifySessionEvent(activeList, claudeDataDir, app)
 			}
 
-			// Idle state — minimal footprint
+			// Output: just active count
 			if activeCount == 0 {
 				fmt.Print("#[fg=colour242]\u25cb#[fg=default]")
-				return nil
-			}
-
-			// Active state — collect today's stats
-			today := time.Now().Format("2006-01-02")
-			var todayMessages int
-			var todayTokens int
-
-			for _, da := range statsCache.DailyActivity {
-				if da.Date == today {
-					todayMessages += da.MessageCount
-					break
-				}
-			}
-
-			// Compute effective cost-per-token per model.
-			overrideMap := app.Config.Pricing.ToTokenPriceMap()
-			costPerToken := make(map[string]float64, len(statsCache.ModelUsage))
-			for name, usage := range statsCache.ModelUsage {
-				costPerToken[name] = pricing.EffectiveCostPerToken(
-					name, usage.InputTokens, usage.OutputTokens,
-					usage.CacheReadInputTokens, usage.CacheCreationInputTokens,
-					overrideMap,
-				)
-			}
-
-			var todayCost float64
-			for _, dt := range statsCache.DailyModelTokens {
-				if dt.Date == today {
-					for modelName, count := range dt.TokensByModel {
-						todayTokens += count
-						if rate, ok := costPerToken[modelName]; ok {
-							todayCost += float64(count) * rate
-						}
-					}
-					break
-				}
-			}
-
-			// Format: "● 3  520msg  45.2k tok  $3.14"
-			// Green dot + count, default stats, yellow cost
-			fmt.Printf("#[fg=green]\u25cf %d#[fg=default]  %dmsg  %s tok",
-				activeCount, todayMessages, formatTokenCount(todayTokens))
-			if todayCost > 0 {
-				fmt.Printf("  #[fg=yellow]$%.2f#[fg=default]", todayCost)
+			} else {
+				fmt.Printf("#[fg=green]\u25cf %d#[fg=default]", activeCount)
 			}
 
 			return nil
@@ -109,20 +50,21 @@ func newStatusCmd(app *App) *cobra.Command {
 	return cmd
 }
 
-// notifyCompletedSession detects sessions that were active on the previous
-// status invocation but are no longer running, and sends a tmux display-message
-// for each completed session.
-func notifyCompletedSession(activeList []claude.ProcessInfo, claudeDataDir string, app *App) {
+// notifySessionEvent detects completed sessions and sessions waiting for input,
+// then alerts the corresponding tmux window tab.
+func notifySessionEvent(activeList []claude.ProcessInfo, claudeDataDir string, app *App) {
 	configDir := filepath.Dir(config.ConfigPath())
 	statePath := filepath.Join(configDir, ".watch-state.json")
 
-	// Build current active ID set
+	// Build current active state
 	currentIDSet := make(map[string]bool, len(activeList))
 	var currentIDList []string
+	pidBySession := make(map[string]int)
 	for _, proc := range activeList {
 		if proc.SessionID != "" {
 			currentIDSet[proc.SessionID] = true
 			currentIDList = append(currentIDList, proc.SessionID)
+			pidBySession[proc.SessionID] = proc.PID
 		}
 	}
 
@@ -131,20 +73,24 @@ func notifyCompletedSession(activeList []claude.ProcessInfo, claudeDataDir strin
 	if data, err := os.ReadFile(statePath); err == nil {
 		_ = json.Unmarshal(data, &prev)
 	}
+	prevWaitingSet := make(map[string]bool)
+	for _, id := range prev.WaitingIDList {
+		prevWaitingSet[id] = true
+	}
 
-	// Detect completed sessions (were active, now gone)
+	// Get tmux pane list (for window alerting)
+	paneList, _ := tmux.ListPane()
 	aliasMap := config.LoadAlias(configDir)
+
+	// 1) Detect completed sessions (were active, now gone)
 	for _, prevID := range prev.ActiveIDList {
 		if currentIDSet[prevID] {
 			continue
 		}
-		// This session completed — build notification message
 		shortID := prevID
 		if len(shortID) > 6 {
 			shortID = shortID[:6]
 		}
-
-		// Try to get project name from session file
 		project := ""
 		sessionList, _ := claude.ScanSession(claudeDataDir)
 		for _, s := range sessionList {
@@ -153,17 +99,59 @@ func notifyCompletedSession(activeList []claude.ProcessInfo, claudeDataDir strin
 				break
 			}
 		}
-
 		alias := config.GetAlias(aliasMap, prevID)
 		msg := formatCompletionMessage(shortID, project, alias)
 		_ = tmux.DisplayMessage(msg)
 	}
 
+	// 2) Detect sessions waiting for input (new transition only)
+	var currentWaitingList []string
+	for _, sid := range currentIDList {
+		state := claude.DetectSessionState(sid, claudeDataDir)
+		if state == claude.StateWaitingInput {
+			currentWaitingList = append(currentWaitingList, sid)
+
+			// Only alert on new transition (wasn't waiting before)
+			if !prevWaitingSet[sid] {
+				// Find tmux window for this process and send bell
+				pid := pidBySession[sid]
+				if pid > 0 {
+					alertWindowByPID(pid, paneList)
+				}
+
+				shortID := sid
+				if len(shortID) > 6 {
+					shortID = shortID[:6]
+				}
+				alias := config.GetAlias(aliasMap, sid)
+				msg := "\u270b " + shortID
+				if alias != "" {
+					msg += " (" + alias + ")"
+				}
+				msg += " waiting for input"
+				_ = tmux.DisplayMessage(msg)
+			}
+		}
+	}
+
 	// Save current state
-	current := watchState{ActiveIDList: currentIDList}
+	current := watchState{
+		ActiveIDList:  currentIDList,
+		WaitingIDList: currentWaitingList,
+	}
 	if data, err := json.Marshal(current); err == nil {
 		_ = os.MkdirAll(filepath.Dir(statePath), 0o755)
 		_ = os.WriteFile(statePath, data, 0o644)
+	}
+}
+
+// alertWindowByPID finds the tmux window containing a process and sends a bell.
+func alertWindowByPID(pid int, paneList []tmux.PaneInfo) {
+	for _, pane := range paneList {
+		if pane.PanePID == pid {
+			_ = tmux.AlertWindow(pane.WindowID)
+			return
+		}
 	}
 }
 
