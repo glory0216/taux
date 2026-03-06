@@ -119,6 +119,7 @@ func NewRootCmd() *cobra.Command {
 		newMemorizeCmd(app),  // taux memorize <id>
 		newCleanCmd(app),     // taux clean
 		newStatusCmd(app),    // taux status (tmux)
+		newSearchCmd(app),    // taux search <query>
 		newDashboardCmd(app), // taux dashboard
 		newSetupCmd(),        // taux setup
 		newSelfUpdateCmd(),   // taux self-update

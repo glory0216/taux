@@ -129,6 +129,9 @@ func ParseSession(path string) (*model.SessionDetail, error) {
 		return nil, err
 	}
 
+	// Set context window max based on model
+	detail.ContextMax = model.MaxContext(detail.Model)
+
 	detail.MessageCount = messageCount
 	detail.Provider = "claude"
 
@@ -158,6 +161,11 @@ func parseAssistantRecord(raw json.RawMessage, detail *model.SessionDetail) {
 		detail.TokenUsage.OutputTokens += am.Usage.OutputTokens
 		detail.TokenUsage.CacheReadInputTokens += am.Usage.CacheReadInputTokens
 		detail.TokenUsage.CacheCreationInputTokens += am.Usage.CacheCreationInputTokens
+	}
+
+	// Track last assistant's input_tokens for context window usage
+	if am.Usage != nil && am.Usage.InputTokens > 0 {
+		detail.ContextUsed = am.Usage.InputTokens
 	}
 
 	// Parse content blocks for tool_use

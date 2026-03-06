@@ -70,6 +70,12 @@ taux는 AI 코딩 에이전트 세션을 **하나의 tmux 대시보드**에서 �
 
 ## 설치
 
+### Homebrew (macOS / Linux)
+
+```bash
+brew install glory0216/tap/taux
+```
+
 ### 원라인 설치
 
 ```bash

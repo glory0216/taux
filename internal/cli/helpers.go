@@ -117,6 +117,30 @@ func shortenModel(name string) string {
 	return name
 }
 
+// renderCLIContextBar renders a CLI context bar with ANSI colors.
+func renderCLIContextBar(pct float64, width int) string {
+	filled := int(pct / 100 * float64(width))
+	if filled > width {
+		filled = width
+	}
+	if filled < 0 {
+		filled = 0
+	}
+	empty := width - filled
+
+	var colorCode string
+	switch {
+	case pct > 80:
+		colorCode = "\033[31m" // red
+	case pct > 50:
+		colorCode = "\033[33m" // yellow
+	default:
+		colorCode = "\033[32m" // green
+	}
+
+	return colorCode + strings.Repeat("\u2588", filled) + "\033[0m" + strings.Repeat("\u2591", empty)
+}
+
 // resolveSessionID finds a full session ID from a partial prefix.
 // It searches all providers and returns an error if the prefix is ambiguous
 // or no match is found.

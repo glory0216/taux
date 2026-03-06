@@ -76,6 +76,12 @@ When a session uses `TodoWrite`, `taux describe <id>` shows the task completion 
 
 ## Install
 
+### Homebrew (macOS / Linux)
+
+```bash
+brew install glory0216/tap/taux
+```
+
 ### One-line installer
 
 ```bash

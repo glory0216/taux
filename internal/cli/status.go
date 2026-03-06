@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/glory0216/taux/internal/config"
+	"github.com/glory0216/taux/internal/notify"
 	"github.com/glory0216/taux/internal/provider/claude"
 	"github.com/glory0216/taux/internal/tmux"
 )
@@ -32,7 +33,7 @@ func newStatusCmd(app *App) *cobra.Command {
 			activeCount := len(activeList)
 
 			// Notification: completion + input waiting
-			if app.Config.General.NotifyCompletion {
+			if app.Config.General.NotifyDesktop {
 				notifySessionEvent(activeList, claudeDataDir, app)
 			}
 
@@ -101,7 +102,7 @@ func notifySessionEvent(activeList []claude.ProcessInfo, claudeDataDir string, a
 		}
 		alias := config.GetAlias(aliasMap, prevID)
 		msg := formatCompletionMessage(shortID, project, alias)
-		_ = tmux.DisplayMessage(msg)
+		_ = notify.Send("taux", msg)
 	}
 
 	// 2) Detect sessions waiting for input (new transition only)

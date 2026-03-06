@@ -40,6 +40,8 @@ type SessionDetail struct {
 	GitBranch     string       `json:"git_branch"`
 	TokenUsage    TokenUsage   `json:"token_usage"`
 	ToolCallCount int          `json:"tool_call_count"`
+	ContextUsed    int            `json:"context_used"`
+	ContextMax     int            `json:"context_max"`
 	ToolUsage     map[string]int `json:"tool_usage"`
 	TaskList      []Task       `json:"task_list,omitempty"`
 	TeamName      string       `json:"team_name,omitempty"`

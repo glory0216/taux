@@ -1164,10 +1164,29 @@ func (m *Model) tickCmd() tea.Cmd {
 // --- Helpers ---
 
 func (m *Model) filteredSessionList() []model.Session {
+	if m.filterText == "" {
+		return m.sessionList
+	}
+
 	aliasMap := m.aliasMap
-	return provider.FilterSessionList(m.sessionList, m.filterText, func(id string) string {
+	// First: metadata filter (fast)
+	metaFiltered := provider.FilterSessionList(m.sessionList, m.filterText, func(id string) string {
 		return config.GetAlias(aliasMap, id)
 	})
+
+	// If metadata matched some sessions, return those
+	if len(metaFiltered) > 0 {
+		return metaFiltered
+	}
+
+	// Fallback: full-text search in session files (slower)
+	var result []model.Session
+	for _, s := range m.sessionList {
+		if s.FilePath != "" && claude.SearchInSession(s.FilePath, m.filterText) {
+			result = append(result, s)
+		}
+	}
+	return result
 }
 
 func (m *Model) currentListLen() int {

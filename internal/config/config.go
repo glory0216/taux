@@ -23,7 +23,7 @@ type Config struct {
 type GeneralConfig struct {
 	DefaultLimit       int  `toml:"default_limit"`
 	CacheTTL           int  `toml:"cache_ttl"`
-	NotifyCompletion   bool `toml:"notify_completion"`
+	NotifyDesktop      bool `toml:"notify_desktop"`
 }
 
 type ProvidersConfig struct {
@@ -120,7 +120,7 @@ func DefaultConfig() *Config {
 		General: GeneralConfig{
 			DefaultLimit:     20,
 			CacheTTL:         10,
-			NotifyCompletion: true,
+			NotifyDesktop: true,
 		},
 		Providers: ProvidersConfig{
 			Enabled: []string{"claude", "cursor", "aider", "codex", "gemini"},

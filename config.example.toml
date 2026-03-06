@@ -4,7 +4,7 @@
 [general]
 default_limit = 20         # Maximum sessions to display in list views
 cache_ttl = 10             # Cache TTL in seconds (reduces filesystem reads)
-notify_completion = true   # tmux display-message when a session completes
+notify_desktop = true       # Desktop notification when a session completes
 
 [providers]
 enabled = ["claude", "cursor", "aider", "codex", "gemini"]   # Active providers

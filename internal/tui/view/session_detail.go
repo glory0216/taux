@@ -85,6 +85,18 @@ func RenderSessionDetail(detail *model.SessionDetail, width, height int) string 
 	)
 	lineList = append(lineList, renderDetailRow("Tokens", tokenStr))
 
+	// Context window usage
+	if detail.ContextMax > 0 {
+		pct := float64(detail.ContextUsed) / float64(detail.ContextMax) * 100
+		bar := renderContextBar(pct, 20)
+		ctxStr := fmt.Sprintf("%s %.0f%% (%s / %s)",
+			bar, pct,
+			formatTokenCount(detail.ContextUsed),
+			formatTokenCount(detail.ContextMax),
+		)
+		lineList = append(lineList, renderDetailRow("Context", ctxStr))
+	}
+
 	// Tool usage
 	if len(detail.ToolUsage) > 0 {
 		type toolEntry struct {
@@ -174,6 +186,34 @@ func RenderSessionDetail(detail *model.SessionDetail, width, height int) string 
 	}
 
 	return strings.Join(lineList, "\n")
+}
+
+// renderContextBar renders a colored progress bar for context window usage.
+func renderContextBar(pct float64, width int) string {
+	filled := int(pct / 100 * float64(width))
+	if filled > width {
+		filled = width
+	}
+	if filled < 0 {
+		filled = 0
+	}
+	empty := width - filled
+
+	// Color based on usage level
+	var color string
+	switch {
+	case pct > 80:
+		color = "#EF4444" // red
+	case pct > 50:
+		color = "#FBBF24" // yellow
+	default:
+		color = "#22C55E" // green
+	}
+
+	filledStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(color))
+	emptyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#374151"))
+
+	return "[" + filledStyle.Render(strings.Repeat("\u2588", filled)) + emptyStyle.Render(strings.Repeat("\u2591", empty)) + "]"
 }
 
 func renderDetailRow(label, value string) string {

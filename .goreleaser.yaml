@@ -54,3 +54,15 @@ release:
     **taux** — extend tmux for AI sessions.
 
     Manage, observe, and clean up your AI agent sessions — without leaving your terminal.
+
+brews:
+  - repository:
+      owner: glory0216
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: https://github.com/glory0216/taux
+    description: "tmux-native TUI dashboard for AI coding agent sessions"
+    install: |
+      bin.install "taux"
+    test: |
+      system "#{bin}/taux", "--version"

@@ -78,6 +78,18 @@ func newDescribeCmd(app *App) *cobra.Command {
 				formatTokenCount(tu.CacheCreationInputTokens),
 			)
 
+			// Context window
+			if detail.ContextMax > 0 {
+				pct := float64(detail.ContextUsed) / float64(detail.ContextMax) * 100
+				bar := renderCLIContextBar(pct, 20)
+				fmt.Printf("Context:  %s / %s (%.0f%%) %s\n",
+					formatTokenCount(detail.ContextUsed),
+					formatTokenCount(detail.ContextMax),
+					pct,
+					bar,
+				)
+			}
+
 			// Tool usage, sorted by count descending
 			if len(detail.ToolUsage) > 0 {
 				type toolEntry struct {
