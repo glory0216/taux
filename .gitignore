@@ -21,6 +21,9 @@ docs/demo-teardown.sh
 .DS_Store
 Thumbs.db
 
+# Worktrees
+.worktrees/
+
 # Go
 *.test
 *.out
