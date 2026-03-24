@@ -1,0 +1,20 @@
+{
+  "id": "msg_002",
+  "sessionID": "ses_def456",
+  "role": "assistant",
+  "parts": [
+    {"type": "text", "text": "I'll add JWT authentication to the login endpoint."}
+  ],
+  "model": "claude-sonnet-4-5",
+  "usage": {
+    "inputTokens": 1200,
+    "outputTokens": 850,
+    "cacheCreationTokens": 300,
+    "cacheReadTokens": 200
+  },
+  "cost": 0,
+  "time": {
+    "created": 1740000060000,
+    "updated": 1740000060000
+  }
+}

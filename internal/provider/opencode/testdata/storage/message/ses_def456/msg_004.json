@@ -1,0 +1,20 @@
+{
+  "id": "msg_004",
+  "sessionID": "ses_def456",
+  "role": "assistant",
+  "parts": [
+    {"type": "text", "text": "I'll add refresh token support as well."}
+  ],
+  "model": "claude-sonnet-4-5",
+  "usage": {
+    "inputTokens": 2000,
+    "outputTokens": 1200,
+    "cacheCreationTokens": 0,
+    "cacheReadTokens": 900
+  },
+  "cost": 0,
+  "time": {
+    "created": 1740001200000,
+    "updated": 1740001200000
+  }
+}

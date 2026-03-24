@@ -10,12 +10,22 @@ const (
 	SessionDead   SessionStatus = "dead"
 )
 
+// SessionState describes the current activity of an active session.
+type SessionState string
+
+const (
+	StateWorking      SessionState = "working"
+	StateWaitingInput SessionState = "waiting_input"
+	StateUnknown      SessionState = ""
+)
+
 // Session is a lightweight summary for list views.
 type Session struct {
 	ID           string        `json:"id"`
 	ShortID      string        `json:"short_id"`
 	Provider     string        `json:"provider"`
 	Status       SessionStatus `json:"status"`
+	State        SessionState  `json:"state,omitempty"` // working / waiting_input (active sessions only)
 	Project      string        `json:"project"`
 	ProjectPath  string        `json:"project_path"`
 	Model        string        `json:"model"`
@@ -31,6 +41,8 @@ type Session struct {
 	PID          int           `json:"pid,omitempty"`
 	RSS          int64         `json:"rss,omitempty"`        // resident memory in bytes
 	CPUPercent   float64       `json:"cpu_percent,omitempty"`
+	TeamName     string        `json:"team_name,omitempty"`
+	AgentName    string        `json:"agent_name,omitempty"`
 }
 
 // SessionDetail holds the full detail view of a single session.

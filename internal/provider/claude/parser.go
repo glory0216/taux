@@ -227,6 +227,8 @@ type quickMetadata struct {
 	Environment    string
 	CWD            string
 	GitBranch      string
+	TeamName       string
+	AgentName      string
 	FirstTimestamp time.Time
 }
 
@@ -319,6 +321,14 @@ func extractQuickMetadata(path string) quickMetadata {
 			}
 		}
 
+		// TeamName / AgentName from any record
+		if meta.TeamName == "" && rec.TeamName != "" {
+			meta.TeamName = rec.TeamName
+		}
+		if meta.AgentName == "" && rec.AgentName != "" {
+			meta.AgentName = rec.AgentName
+		}
+
 		// Early exit if all found
 		if meta.Model != "" && meta.Description != "" && meta.Environment == "ide" && meta.GitBranch != "" {
 			break
@@ -327,6 +337,39 @@ func extractQuickMetadata(path string) quickMetadata {
 	return meta
 }
 
+// findSessionJSONL returns the JSONL file path and the encoded parent directory
+// name for a given session ID. Returns ("", "") if not found.
+func findSessionJSONL(sessionID, dataDir string) (filePath, dirName string) {
+	pattern := filepath.Join(dataDir, "projects", "*", sessionID+".jsonl")
+	matchList, err := filepath.Glob(pattern)
+	if err != nil || len(matchList) == 0 {
+		return "", ""
+	}
+	return matchList[0], filepath.Base(filepath.Dir(matchList[0]))
+}
+
+// QuickBranchAndCWD returns the git branch and CWD for a session ID
+// by scanning the first ~40 lines of its JSONL file. This is fast enough
+// for status bar use (~5ms).
+func QuickBranchAndCWD(sessionID, dataDir string) (branch, cwd string) {
+	filePath, _ := findSessionJSONL(sessionID, dataDir)
+	if filePath == "" {
+		return "", ""
+	}
+	meta := extractQuickMetadata(filePath)
+	return meta.GitBranch, meta.CWD
+}
+
+// QuickTeamInfo returns teamName, agentName, and project for a session ID.
+func QuickTeamInfo(sessionID, dataDir string) (teamName, agentName, project string) {
+	filePath, dirName := findSessionJSONL(sessionID, dataDir)
+	if filePath == "" {
+		return "", "", ""
+	}
+	meta := extractQuickMetadata(filePath)
+	projectPath := decodeProjectPath(dirName)
+	return meta.TeamName, meta.AgentName, filepath.Base(projectPath)
+}
 
 // stripLeadingTags removes XML-like tags from the beginning of text.
 // For example: "<ide_selection>The user selected..." → "The user selected..."

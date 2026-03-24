@@ -1,0 +1,13 @@
+{
+  "id": "msg_003",
+  "sessionID": "ses_def456",
+  "role": "user",
+  "parts": [
+    {"type": "text", "text": "Also add refresh token support"}
+  ],
+  "model": "",
+  "time": {
+    "created": 1740001000000,
+    "updated": 1740001000000
+  }
+}

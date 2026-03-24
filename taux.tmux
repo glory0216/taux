@@ -56,13 +56,19 @@ fi
 KEY_DASHBOARD=$(get_opt "@taux-key-dashboard" "H")
 KEY_SESSIONS=$(get_opt "@taux-key-sessions" "A")
 KEY_STATS=$(get_opt "@taux-key-stats" "S")
+KEY_PEEK=$(get_opt "@taux-key-peek" "P")
 STATUS_ENABLED=$(get_opt "@taux-status" "on")
 STATUS_INTERVAL=$(get_opt "@taux-status-interval" "10")
 
 # ── Keybindings ───────────────────────────────────────────────
-tmux bind-key "$KEY_DASHBOARD" display-popup -E -w 80% -h 80% -T ' taux ' "$TAUX_BIN dashboard"
+tmux bind-key "$KEY_DASHBOARD" display-popup -E -w 80% -h 80% -T ' taux ' "$TAUX_BIN dashboard --split-target #{pane_id}"
 tmux bind-key "$KEY_SESSIONS" display-popup -E -w 60% -h 50% -T ' Active Sessions ' "bash -c '$TAUX_BIN get sessions -s active; read -rsn1'"
 tmux bind-key "$KEY_STATS" display-popup -E -w 50% -h 40% -T ' Stats ' "bash -c '$TAUX_BIN get stats; read -rsn1'"
+tmux bind-key "$KEY_PEEK" display-popup -E -w 60% -h 50% -T ' Peek ' "bash -c '$TAUX_BIN peek; read -rsn1'"
+
+# ── Window status highlight ──────────────────────────────────
+tmux setw -g window-status-style 'fg=colour245'
+tmux setw -g window-status-current-style 'fg=colour16,bg=colour39,bold'
 
 # ── Status bar ────────────────────────────────────────────────
 if [ "$STATUS_ENABLED" = "on" ]; then

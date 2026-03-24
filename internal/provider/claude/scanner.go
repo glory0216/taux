@@ -98,6 +98,8 @@ func scanSingleSession(path string, projectsDir string) (*model.Session, error) 
 		LastActive:   lastTimestamp,
 		FilePath:     path,
 		FileSize:     stat.Size(),
+		TeamName:     meta.TeamName,
+		AgentName:    meta.AgentName,
 	}
 
 	return session, nil

@@ -1,0 +1,13 @@
+{
+  "id": "msg_001",
+  "sessionID": "ses_def456",
+  "role": "user",
+  "parts": [
+    {"type": "text", "text": "Add JWT authentication to the login endpoint"}
+  ],
+  "model": "",
+  "time": {
+    "created": 1740000010000,
+    "updated": 1740000010000
+  }
+}

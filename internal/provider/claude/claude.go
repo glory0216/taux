@@ -84,6 +84,14 @@ func (p *Provider) ListSession(ctx context.Context, filter provider.Filter) ([]m
 			sessionList[i].PID = proc.PID
 			sessionList[i].RSS = proc.RSS
 			sessionList[i].CPUPercent = proc.CPUPercent
+			// Detect session state (working vs waiting for input)
+			state := DetectSessionState(sessionList[i].ID, p.dataDir)
+			switch state {
+			case StateWaitingInput:
+				sessionList[i].State = model.StateWaitingInput
+			case StateWorking:
+				sessionList[i].State = model.StateWorking
+			}
 		}
 	}
 

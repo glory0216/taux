@@ -20,6 +20,7 @@ import (
 	"github.com/glory0216/taux/internal/provider/copilot"
 	"github.com/glory0216/taux/internal/provider/cursor"
 	"github.com/glory0216/taux/internal/provider/gemini"
+	"github.com/glory0216/taux/internal/provider/opencode"
 )
 
 // Version and Commit are set at build time via ldflags.
@@ -66,12 +67,19 @@ func NewApp() *App {
 		geminiDataDir = config.ExpandPath(cfg.Providers.Gemini.DataDir)
 	}
 
+	// OpenCode data dir: OPENCODE_DATA_DIR env → config → ~/.local/share/opencode
+	openCodeDataDir := os.Getenv("OPENCODE_DATA_DIR")
+	if openCodeDataDir == "" {
+		openCodeDataDir = config.ExpandPath(cfg.Providers.OpenCode.DataDir)
+	}
+
 	reg := provider.NewRegistry(
 		claude.New(claudeDataDir, c),
 		cursor.New(cursorDataDir, c),
 		aider.New(aiderScanDirList, c),
 		codex.New(codexDataDir, c),
 		gemini.New(geminiDataDir, c),
+		opencode.New(openCodeDataDir, c),
 		copilot.New(),
 	)
 
@@ -100,7 +108,7 @@ func NewRootCmd() *cobra.Command {
 			if !isInsideTmux() {
 				return launchInTmux()
 			}
-			return runDashboard(app)
+			return runDashboard(app, "")
 		},
 	}
 
@@ -119,6 +127,7 @@ func NewRootCmd() *cobra.Command {
 		newMemorizeCmd(app),  // taux memorize <id>
 		newCleanCmd(app),     // taux clean
 		newStatusCmd(app),    // taux status (tmux)
+		newPeekCmd(app),      // taux peek (current pane session)
 		newSearchCmd(app),    // taux search <query>
 		newDashboardCmd(app), // taux dashboard
 		newSetupCmd(),        // taux setup

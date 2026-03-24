@@ -135,6 +135,15 @@ func ListPane() ([]PaneInfo, error) {
 	return list, nil
 }
 
+// CurrentPanePID returns the PID of the shell running in the current tmux pane.
+func CurrentPanePID() (int, error) {
+	out, err := exec.Command("tmux", "display-message", "-p", "#{pane_pid}").Output()
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(strings.TrimSpace(string(out)))
+}
+
 // AlertWindow sends a bell character to trigger window tab highlighting.
 // Requires visual-bell or monitor-bell to be on in tmux.
 func AlertWindow(windowID string) error {

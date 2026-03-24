@@ -162,18 +162,23 @@ taux clean --broken       # Remove corrupted sessions
 
 | Key | Action |
 |-----|--------|
-| `j/k`, `↑/↓` | Navigate |
+| `j/k`, `↑/↓` | Navigate list |
+| `PgUp` / `PgDn` | Page up / down |
 | `Tab` / `Shift+Tab` | Switch tabs (Sessions / Stats / Projects) |
-| `Enter` | Detail view |
-| `R` | Replay conversation (scrollable viewer) |
+| `Enter` | Open detail view |
+| `Esc` / `Backspace` | Back to list from detail view |
 | `a` | Attach to session |
+| `R` | Replay conversation (scrollable viewer) |
 | `K` | Kill (with y/N confirm) |
+| `d` | Delete session files (with y/N confirm) |
 | `M` | Memorize & delete (archive, then remove) |
 | `m` | Memorize / keep (archive only, keep original) |
 | `C` | Clean broken sessions (with y/N confirm) |
+| `L` | Clean old sessions by age (prompts for max age) |
 | `n` | Set alias (searchable via `/`) |
 | `/` | Filter by ID, alias, project, model |
 | `r` | Force refresh |
+| `?` | Toggle help |
 | `q` | Quit |
 
 ## How It Works
@@ -195,6 +200,7 @@ taux clean --broken       # Remove corrupted sessions
 | Codex CLI | ✅ | ✅ | ✅ | ✅ | ✅ | JSONL (`~/.codex/`) |
 | Gemini CLI | ✅ | ✅ | ✅ | ✅ | ✅ | JSON (`~/.gemini/`) |
 | Aider | ✅ | ✅ | ✅ | ✅ | ❌ | Markdown (`.aider.chat.history.md`) |
+| OpenCode | ✅ | ✅ | ✅ | ✅ | ✅ | JSON (`~/.local/share/opencode/`) |
 
 ## Configuration
 

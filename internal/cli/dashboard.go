@@ -12,20 +12,26 @@ import (
 )
 
 func newDashboardCmd(app *App) *cobra.Command {
-	return &cobra.Command{
+	var splitTarget string
+
+	cmd := &cobra.Command{
 		Use:   "dashboard",
 		Short: "Interactive TUI dashboard",
 		Long:  "Launch an interactive terminal dashboard for managing AI agent sessions.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDashboard(app)
+			return runDashboard(app, splitTarget)
 		},
 	}
+
+	cmd.Flags().StringVar(&splitTarget, "split-target", "", "tmux pane ID to split when attaching (e.g. %3)")
+
+	return cmd
 }
 
 // runDashboard launches the TUI and handles attach requests after exit.
-// When inside tmux and an attach is requested, it opens a new tmux window
-// and loops back to restart the dashboard so the window stays alive.
-func runDashboard(app *App) error {
+// When splitTarget is set (a tmux pane ID like %3), attach splits that pane
+// instead of opening a new window.
+func runDashboard(app *App, splitTarget string) error {
 	for {
 		m := tui.NewModel(app.Registry, app.Config, Version)
 		p := tea.NewProgram(m, tea.WithAltScreen())
@@ -57,7 +63,6 @@ func runDashboard(app *App) error {
 		}
 
 		// Handle attach request
-		attached := false
 		for _, prov := range app.Registry.Available() {
 			cmdStr, argSlice, workDir, err := prov.AttachSession(req.SessionID)
 			if err != nil || cmdStr == "" {
@@ -65,20 +70,19 @@ func runDashboard(app *App) error {
 			}
 
 			if isInsideTmux() {
-				// Open in new tmux window, then loop back to dashboard
-				_ = tmuxNewWindowAttach(cmdStr, argSlice, workDir, req.SessionID, req.Alias)
-				attached = true
+				if splitTarget != "" {
+					_ = tmuxSplitAttach(cmdStr, argSlice, workDir, splitTarget)
+				} else {
+					_ = tmuxNewWindowAttach(cmdStr, argSlice, workDir, req.SessionID, req.Alias)
+				}
 				break
 			}
 			// Outside tmux → replace process (never returns)
 			return execAttachWithDir(cmdStr, argSlice, workDir)
 		}
 
-		if !attached {
-			// No provider could attach — just restart dashboard
-			continue
-		}
-		// Loop back → dashboard restarts in this window
+		// No provider could attach — just restart dashboard
+		continue
 	}
 }
 
@@ -103,20 +107,32 @@ func runReplayInline(req *tui.ReplayRequest) error {
 	return err
 }
 
-// tmuxNewWindowAttach opens a new tmux window with the attach command.
-// The dashboard stays running in the original window.
-func tmuxNewWindowAttach(cmdStr string, argSlice []string, workDir string, sessionID string, alias string) error {
-	// Build the shell command to run in the new tmux window
-	// e.g.: cd /path/to/project && claude --resume <id>
-	var shellCmd string
+// buildShellCmd constructs a quoted shell command string, optionally cd-ing first.
+func buildShellCmd(cmdStr string, argSlice []string, workDir string) string {
+	var s string
 	if workDir != "" {
-		shellCmd = fmt.Sprintf("cd %q && %q", workDir, cmdStr)
+		s = fmt.Sprintf("cd %q && %q", workDir, cmdStr)
 	} else {
-		shellCmd = fmt.Sprintf("%q", cmdStr)
+		s = fmt.Sprintf("%q", cmdStr)
 	}
 	for _, arg := range argSlice {
-		shellCmd += " " + fmt.Sprintf("%q", arg)
+		s += " " + fmt.Sprintf("%q", arg)
 	}
+	return s
+}
+
+// tmuxSplitAttach splits the target pane horizontally and runs the attach command.
+func tmuxSplitAttach(cmdStr string, argSlice []string, workDir string, targetPane string) error {
+	cmd := exec.Command("tmux", "split-window", "-h", "-t", targetPane, buildShellCmd(cmdStr, argSlice, workDir))
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// tmuxNewWindowAttach opens a new tmux window with the attach command.
+func tmuxNewWindowAttach(cmdStr string, argSlice []string, workDir string, sessionID string, alias string) error {
+	shellCmd := buildShellCmd(cmdStr, argSlice, workDir)
 
 	// Window name: alias if set, otherwise short session ID
 	winName := alias

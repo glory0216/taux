@@ -27,12 +27,13 @@ type GeneralConfig struct {
 }
 
 type ProvidersConfig struct {
-	Enabled []string      `toml:"enabled"`
-	Claude  ClaudeConfig  `toml:"claude"`
-	Cursor  CursorConfig  `toml:"cursor"`
-	Aider   AiderConfig   `toml:"aider"`
-	Codex   CodexConfig   `toml:"codex"`
-	Gemini  GeminiConfig  `toml:"gemini"`
+	Enabled  []string      `toml:"enabled"`
+	Claude   ClaudeConfig  `toml:"claude"`
+	Cursor   CursorConfig  `toml:"cursor"`
+	Aider    AiderConfig   `toml:"aider"`
+	Codex    CodexConfig   `toml:"codex"`
+	Gemini   GeminiConfig  `toml:"gemini"`
+	OpenCode OpenCodeConfig `toml:"opencode"`
 }
 
 type ClaudeConfig struct {
@@ -41,6 +42,13 @@ type ClaudeConfig struct {
 
 type CursorConfig struct {
 	DataDir string `toml:"data_dir"`
+}
+
+// defaultOpenCodeDataDir returns the default OpenCode data directory.
+// OpenCode follows XDG on both Linux and macOS.
+func defaultOpenCodeDataDir() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".local", "share", "opencode")
 }
 
 // DefaultCursorDataDir returns the platform-specific Cursor data directory.
@@ -84,6 +92,10 @@ type CodexConfig struct {
 
 type GeminiConfig struct {
 	DataDir string `toml:"data_dir"` // default: ~/.gemini (GEMINI_HOME env takes priority)
+}
+
+type OpenCodeConfig struct {
+	DataDir string `toml:"data_dir"` // default: ~/.local/share/opencode (OPENCODE_DATA_DIR env takes priority)
 }
 
 type PricingConfig struct {
@@ -138,6 +150,9 @@ func DefaultConfig() *Config {
 			},
 			Gemini: GeminiConfig{
 				DataDir: "~/.gemini",
+			},
+			OpenCode: OpenCodeConfig{
+				DataDir: defaultOpenCodeDataDir(),
 			},
 		},
 		Tmux: TmuxConfig{

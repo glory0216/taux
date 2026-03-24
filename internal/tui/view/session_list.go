@@ -15,6 +15,8 @@ var (
 	rowStyle         = lipgloss.NewStyle()
 	selectedRowStyle = lipgloss.NewStyle().Bold(true).Background(lipgloss.Color("#1F2937"))
 	activeIconStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#22C55E"))
+	workingIconStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#22C55E"))
+	waitingIconStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FBBF24"))
 	deadIconStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#6B7280"))
 	ideRowStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#6B7280"))
 	ideSelStyle      = lipgloss.NewStyle().Bold(true).Background(lipgloss.Color("#1F2937")).Foreground(lipgloss.Color("#9CA3AF"))
@@ -86,10 +88,17 @@ func RenderSessionList(sessionList []model.Session, aliasMap map[string]string, 
 	for i := offset; i < visibleEnd; i++ {
 		s := sessionList[i]
 
-		// Status icon
+		// Status icon (with state for active sessions)
 		var icon string
 		if s.Status == model.SessionActive {
-			icon = activeIconStyle.Render(" \u25cf")
+			switch s.State {
+			case model.StateWaitingInput:
+				icon = waitingIconStyle.Render(" \u270b")
+			case model.StateWorking:
+				icon = workingIconStyle.Render(" \u25b6")
+			default:
+				icon = activeIconStyle.Render(" \u25cf")
+			}
 		} else {
 			icon = deadIconStyle.Render(" \u25cb")
 		}

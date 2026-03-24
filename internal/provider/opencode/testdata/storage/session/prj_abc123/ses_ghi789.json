@@ -1,0 +1,16 @@
+{
+  "id": "ses_ghi789",
+  "version": "0.1.0",
+  "projectID": "prj_abc123",
+  "directory": "/Users/user/projects/myapp",
+  "title": "Fix login bug",
+  "time": {
+    "created": 1739900000000,
+    "updated": 1739903600000
+  },
+  "summary": {
+    "additions": 5,
+    "deletions": 2,
+    "files": 1
+  }
+}

@@ -917,14 +917,16 @@ func (m *Model) renderGreeting() string {
 	kr2 := keyColor.Render("M") + labelColor.Render(" memorize") + "  " +
 		keyColor.Render("m") + labelColor.Render(" archive") + "  " +
 		keyColor.Render("C") + labelColor.Render(" clean") + "  " +
-		keyColor.Render("r") + labelColor.Render(" refresh")
-	kr2VisLen := len("M memorize  m archive  C clean  r refresh")
+		keyColor.Render("L") + labelColor.Render(" clean old")
+	kr2VisLen := len("M memorize  m archive  C clean  L clean old")
 	line6 := pad(kr2, kr2VisLen)
 
 	// Line 7: Keys row 3 — navigation & misc
-	kr3 := keyColor.Render("n") + labelColor.Render(" rename") + "   " +
+	kr3 := keyColor.Render("R") + labelColor.Render(" replay") + "  " +
+		keyColor.Render("n") + labelColor.Render(" rename") + "  " +
+		keyColor.Render("r") + labelColor.Render(" refresh") + "   " +
 		keyColor.Render("q") + labelColor.Render(" quit")
-	kr3VisLen := len("n rename   q quit")
+	kr3VisLen := len("R replay  n rename  r refresh   q quit")
 	line7 := pad(kr3, kr3VisLen)
 
 	return strings.Join([]string{

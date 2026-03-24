@@ -7,7 +7,7 @@ cache_ttl = 10             # Cache TTL in seconds (reduces filesystem reads)
 notify_desktop = true       # Desktop notification when a session completes
 
 [providers]
-enabled = ["claude", "cursor", "aider", "codex", "gemini"]   # Active providers
+enabled = ["claude", "cursor", "aider", "codex", "gemini", "opencode"]   # Active providers
 
 [providers.claude]
 data_dir = "~/.claude"                    # Claude Code data directory
@@ -25,6 +25,9 @@ data_dir = "~/.codex"                     # Codex CLI data directory (CODEX_HOME
 
 [providers.gemini]
 data_dir = "~/.gemini"                    # Gemini CLI data directory (GEMINI_HOME env var also supported)
+
+[providers.opencode]
+# data_dir = "~/.local/share/opencode"   # OpenCode data directory (OPENCODE_DATA_DIR env var also supported)
 
 [tmux]
 status_interval = 10       # Status bar refresh interval (seconds)

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -158,6 +159,42 @@ func FindProcessBySession(sessionID string) (int, error) {
 		}
 	}
 	return 0, nil
+}
+
+// IsChildOf checks whether pid is a descendant of ancestorPID by walking
+// the PPID chain. Returns false if the chain cannot be resolved.
+func IsChildOf(pid, ancestorPID int) bool {
+	if pid == ancestorPID {
+		return true
+	}
+	visited := make(map[int]bool)
+	current := pid
+	for current > 1 && !visited[current] {
+		visited[current] = true
+		out, err := exec.Command("ps", "-o", "ppid=", "-p", strconv.Itoa(current)).Output()
+		if err != nil {
+			return false
+		}
+		ppid, err := strconv.Atoi(strings.TrimSpace(string(out)))
+		if err != nil {
+			return false
+		}
+		if ppid == ancestorPID {
+			return true
+		}
+		current = ppid
+	}
+	return false
+}
+
+// IsWorktree returns true if the given directory is inside a git worktree
+// (i.e., .git is a file pointing to the main repo, not a directory).
+func IsWorktree(cwd string) bool {
+	info, err := os.Lstat(cwd + "/.git")
+	if err != nil {
+		return false
+	}
+	return !info.IsDir() // worktree has .git as a file, not a directory
 }
 
 // IsSessionActive checks if a session has a running process.

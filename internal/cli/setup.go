@@ -20,9 +20,14 @@ var tauxBlock = strings.Join([]string{
 	tauxBlockStart,
 	"set -g status-interval 10",
 	"set -g status-right '#(taux status 2>/dev/null)  %H:%M %Y-%m-%d'",
-	"bind H display-popup -E -w 80% -h 80% -T ' taux ' 'taux dashboard'",
+	"# Active window highlight",
+	"setw -g window-status-style 'fg=colour245'",
+	"setw -g window-status-current-style 'fg=colour16,bg=colour39,bold'",
+	"# Keybindings",
+	"bind H display-popup -E -w 80% -h 80% -T ' taux ' 'taux dashboard --split-target #{pane_id}'",
 	"bind A display-popup -E -w 60% -h 50% -T ' Active Sessions ' 'bash -c \"taux get sessions -s active; read -rsn1\"'",
 	"bind S display-popup -E -w 60% -h 50% -T ' Stats ' 'bash -c \"taux get stats; read -rsn1\"'",
+	"bind P display-popup -E -w 60% -h 50% -T ' Peek ' 'bash -c \"taux peek; read -rsn1\"'",
 	tauxBlockEnd,
 }, "\n")
 
