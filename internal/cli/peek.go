@@ -64,8 +64,9 @@ func findCurrentPaneSession(claudeDataDir string) (string, error) {
 		return "", err
 	}
 
+	ppidMap := claude.BuildPPIDMap()
 	for _, proc := range activeList {
-		if proc.SessionID != "" && claude.IsChildOf(proc.PID, panePID) {
+		if proc.SessionID != "" && claude.IsChildOf(proc.PID, panePID, ppidMap) {
 			return proc.SessionID, nil
 		}
 	}

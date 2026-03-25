@@ -41,7 +41,7 @@ func newSearchCmd(app *App) *cobra.Command {
 					continue
 				}
 
-				if s.FilePath == "" {
+				if s.FilePath == "" || s.Provider != "claude" {
 					continue
 				}
 

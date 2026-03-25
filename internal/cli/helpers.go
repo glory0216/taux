@@ -6,28 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/glory0216/taux/internal/format"
 	"github.com/glory0216/taux/internal/model"
 	"github.com/glory0216/taux/internal/provider"
 )
 
 // formatAge converts a duration to a compact human-readable string.
-// Examples: "3d", "2h", "45m", "12s"
-func formatAge(d time.Duration) string {
-	if d < 0 {
-		d = -d
-	}
-	switch {
-	case d >= 24*time.Hour:
-		days := int(d.Hours() / 24)
-		return fmt.Sprintf("%dd", days)
-	case d >= time.Hour:
-		return fmt.Sprintf("%dh", int(d.Hours()))
-	case d >= time.Minute:
-		return fmt.Sprintf("%dm", int(d.Minutes()))
-	default:
-		return fmt.Sprintf("%ds", int(d.Seconds()))
-	}
-}
+func formatAge(d time.Duration) string { return format.FormatAge(d) }
 
 // formatSize formats bytes into a human-readable string.
 // Examples: "12.3 MB", "4.5 KB", "512 B"
@@ -45,19 +30,7 @@ func formatSize(bytes int64) string {
 }
 
 // formatSizeShort formats bytes compactly for table display.
-// Examples: "12.3M", "4.5K"
-func formatSizeShort(bytes int64) string {
-	switch {
-	case bytes >= 1024*1024*1024:
-		return fmt.Sprintf("%.1fG", float64(bytes)/(1024*1024*1024))
-	case bytes >= 1024*1024:
-		return fmt.Sprintf("%.1fM", float64(bytes)/(1024*1024))
-	case bytes >= 1024:
-		return fmt.Sprintf("%.1fK", float64(bytes)/1024)
-	default:
-		return fmt.Sprintf("%dB", bytes)
-	}
-}
+func formatSizeShort(bytes int64) string { return format.FormatSizeShort(bytes) }
 
 // formatTokenCount formats a token count with SI-like suffixes.
 // Examples: 1000->"1.0k", 1000000->"1.0M", 500->"500"
@@ -92,30 +65,8 @@ func formatNumber(n int) string {
 	return string(result)
 }
 
-// shortenModel strips common prefixes from model names for compact display.
-// "claude-opus-4-6" -> "opus-4-6"
-// "claude-opus-4-5-20251101" -> "opus-4-5"
-// "claude-sonnet-4-5-20250929" -> "sonnet-4-5"
-func shortenModel(name string) string {
-	name = strings.TrimPrefix(name, "claude-")
-	// Strip date suffix like -20251101
-	if idx := strings.LastIndex(name, "-"); idx > 0 {
-		suffix := name[idx+1:]
-		if len(suffix) == 8 {
-			allDigit := true
-			for _, c := range suffix {
-				if c < '0' || c > '9' {
-					allDigit = false
-					break
-				}
-			}
-			if allDigit {
-				name = name[:idx]
-			}
-		}
-	}
-	return name
-}
+// shortenModel strips common prefixes and date suffixes from model names for compact display.
+func shortenModel(name string) string { return format.ShortenModel(name) }
 
 // renderCLIContextBar renders a CLI context bar with ANSI colors.
 func renderCLIContextBar(pct float64, width int) string {

@@ -12,7 +12,6 @@ type ProcessInfo struct {
 	PID        int
 	RSS        int64
 	CPUPercent float64
-	CWD        string
 }
 
 // FindAiderProcess returns info about running aider processes.

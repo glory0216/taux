@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/glory0216/taux/internal/format"
 	"github.com/glory0216/taux/internal/model"
 )
 
@@ -74,7 +75,7 @@ func RenderProjectList(projectList []model.Project, cursor, offset, width, heigh
 		memStr := "-"
 		cpuStr := "-"
 		if p.ActiveCount > 0 && p.TotalRSS > 0 {
-			memStr = formatSizeShort(p.TotalRSS)
+			memStr = format.FormatSizeShort(p.TotalRSS)
 		}
 		if p.ActiveCount > 0 && p.TotalCPU > 0 {
 			cpuStr = fmt.Sprintf("%.1f%%", p.TotalCPU)
@@ -85,7 +86,7 @@ func RenderProjectList(projectList []model.Project, cursor, offset, width, heigh
 			colPath, truncate(p.Path, colPath),
 			colSessions, p.SessionCount,
 			colActive, p.ActiveCount,
-			colSize, formatSizeShort(p.TotalSize),
+			colSize, format.FormatSizeShort(p.TotalSize),
 			colMem, memStr,
 			colCPU, cpuStr,
 		)

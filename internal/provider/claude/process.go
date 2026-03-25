@@ -161,22 +161,46 @@ func FindProcessBySession(sessionID string) (int, error) {
 	return 0, nil
 }
 
+// BuildPPIDMap returns a pid→ppid map for all running processes by parsing
+// a single "ps -eo pid,ppid" call. Pass the result to IsChildOf to avoid
+// spawning one subprocess per PPID-chain hop.
+func BuildPPIDMap() map[int]int {
+	out, err := exec.Command("ps", "-eo", "pid,ppid").Output()
+	if err != nil {
+		return nil
+	}
+	m := make(map[int]int)
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) < 2 {
+			continue
+		}
+		pid, err1 := strconv.Atoi(fields[0])
+		ppid, err2 := strconv.Atoi(fields[1])
+		if err1 == nil && err2 == nil && pid > 0 {
+			m[pid] = ppid
+		}
+	}
+	return m
+}
+
 // IsChildOf checks whether pid is a descendant of ancestorPID by walking
-// the PPID chain. Returns false if the chain cannot be resolved.
-func IsChildOf(pid, ancestorPID int) bool {
+// the pre-built ppidMap in memory. Returns false if ppidMap is nil or the
+// chain cannot be resolved.
+func IsChildOf(pid, ancestorPID int, ppidMap map[int]int) bool {
 	if pid == ancestorPID {
 		return true
+	}
+	if ppidMap == nil {
+		return false
 	}
 	visited := make(map[int]bool)
 	current := pid
 	for current > 1 && !visited[current] {
 		visited[current] = true
-		out, err := exec.Command("ps", "-o", "ppid=", "-p", strconv.Itoa(current)).Output()
-		if err != nil {
-			return false
-		}
-		ppid, err := strconv.Atoi(strings.TrimSpace(string(out)))
-		if err != nil {
+		ppid, ok := ppidMap[current]
+		if !ok {
 			return false
 		}
 		if ppid == ancestorPID {
@@ -197,11 +221,3 @@ func IsWorktree(cwd string) bool {
 	return !info.IsDir() // worktree has .git as a file, not a directory
 }
 
-// IsSessionActive checks if a session has a running process.
-func IsSessionActive(sessionID string) bool {
-	pid, err := FindProcessBySession(sessionID)
-	if err != nil {
-		return false
-	}
-	return pid > 0
-}

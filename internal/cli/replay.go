@@ -31,12 +31,13 @@ func newReplayCmd(app *App) *cobra.Command {
 			}
 
 			// Find session file path and metadata
-			var filePath string
+			var filePath, sessionProvider string
 			var projectName, modelName string
 			sessionList, _ := app.Registry.AllSession(ctx, emptyFilter())
 			for _, s := range sessionList {
 				if s.ID == fullID {
 					filePath = s.FilePath
+					sessionProvider = s.Provider
 					projectName = s.Project
 					modelName = s.Model
 					break
@@ -44,6 +45,9 @@ func newReplayCmd(app *App) *cobra.Command {
 			}
 			if filePath == "" {
 				return fmt.Errorf("session file not found: %s", argList[0])
+			}
+			if sessionProvider != "claude" {
+				return fmt.Errorf("taux replay is only supported for Claude sessions (this is a %s session)", sessionProvider)
 			}
 
 			// Parse conversation

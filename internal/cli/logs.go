@@ -32,16 +32,20 @@ func newLogsCmd(app *App) *cobra.Command {
 			}
 
 			// Find session file path
-			var filePath string
+			var filePath, sessionProvider string
 			sessionList, _ := app.Registry.AllSession(ctx, emptyFilter())
 			for _, s := range sessionList {
 				if s.ID == fullID {
 					filePath = s.FilePath
+					sessionProvider = s.Provider
 					break
 				}
 			}
 			if filePath == "" {
 				return fmt.Errorf("session file not found: %s", argList[0])
+			}
+			if sessionProvider != "claude" {
+				return fmt.Errorf("taux logs is only supported for Claude sessions (this is a %s session)", sessionProvider)
 			}
 
 			return printLogs(filePath, tail, noTools)
@@ -67,10 +71,27 @@ func printLogs(filePath string, tail int, noTools bool) error {
 	}
 	defer f.Close()
 
-	var entryList []logEntry
-
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+
+	// Use a ring buffer when tail > 0 so we never hold more than tail entries
+	// in memory regardless of how large the session file is.
+	useRing := tail > 0
+	var entryList []logEntry
+	var ring []logEntry
+	var ringPos int
+	if useRing {
+		ring = make([]logEntry, tail)
+	}
+
+	addEntry := func(e logEntry) {
+		if useRing {
+			ring[ringPos%tail] = e
+			ringPos++
+		} else {
+			entryList = append(entryList, e)
+		}
+	}
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
@@ -99,23 +120,30 @@ func printLogs(filePath string, tail int, noTools bool) error {
 			if text == "" {
 				continue
 			}
-			entryList = append(entryList, logEntry{
-				timestamp: ts,
-				role:      "user",
-				content:   text,
-			})
+			addEntry(logEntry{timestamp: ts, role: "user", content: text})
 
 		case "assistant":
-			entries := extractAssistantEntries(rec.Message, noTools)
-			for _, e := range entries {
+			for _, e := range extractAssistantEntries(rec.Message, noTools) {
 				e.timestamp = ts
-				entryList = append(entryList, e)
+				addEntry(e)
 			}
 		}
 	}
 
-	if tail > 0 && len(entryList) > tail {
-		entryList = entryList[len(entryList)-tail:]
+	if useRing {
+		// Reconstruct ordered slice from ring buffer
+		count := ringPos
+		if count > tail {
+			count = tail
+		}
+		start := 0
+		if ringPos > tail {
+			start = ringPos % tail
+		}
+		entryList = make([]logEntry, count)
+		for i := 0; i < count; i++ {
+			entryList[i] = ring[(start+i)%tail]
+		}
 	}
 
 	for _, e := range entryList {

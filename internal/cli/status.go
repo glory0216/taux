@@ -200,10 +200,13 @@ func currentPaneBranch(activeList []claude.ProcessInfo, claudeDataDir string) st
 		return ""
 	}
 
+	// Build PPID map once (single ps call) then walk in memory for each session.
+	ppidMap := claude.BuildPPIDMap()
+
 	// Find the active session whose PID is a child of the current pane
 	var matched *claude.ProcessInfo
 	for i := range activeList {
-		if activeList[i].SessionID != "" && claude.IsChildOf(activeList[i].PID, panePID) {
+		if activeList[i].SessionID != "" && claude.IsChildOf(activeList[i].PID, panePID, ppidMap) {
 			matched = &activeList[i]
 			break
 		}
@@ -375,11 +378,21 @@ func notifyProviderEvents(ctx context.Context, app *App, prev *watchState, curre
 
 		pidSet := currentPIDSet(activeSessions)
 
-		// Build snapshot list for this poll cycle
+		// Build snapshot list for this poll cycle.
+		// For providers with reliable PID→session mapping (Codex exposes session ID
+		// via --resume in process args), store full session metadata.
+		// For positional providers (Gemini, Aider, OpenCode), store only the PID so
+		// that a session-list reorder does not trigger a false-positive completion
+		// notification with the wrong session name.
+		reliableMapping := name == "codex"
 		var snapshots []providerSessionSnapshot
 		for _, s := range activeSessions {
 			if s.PID > 0 {
-				snapshots = append(snapshots, buildProviderSnapshot(s))
+				if reliableMapping {
+					snapshots = append(snapshots, buildProviderSnapshot(s))
+				} else {
+					snapshots = append(snapshots, providerSessionSnapshot{PID: s.PID})
+				}
 			}
 		}
 		current.ProviderSession[name] = snapshots
@@ -388,7 +401,12 @@ func notifyProviderEvents(ctx context.Context, app *App, prev *watchState, curre
 		// Use "taux" as app name (same as Claude) so macOS groups all taux
 		// notifications together; provider name appears in the message body.
 		for _, gone := range detectGoneSnapshots(prev.ProviderSession[name], pidSet) {
-			msg := "[" + name + "] " + formatCompletionMessage(gone.ShortID, gone.Project, "")
+			var msg string
+			if gone.ShortID != "" {
+				msg = "[" + name + "] " + formatCompletionMessage(gone.ShortID, gone.Project, "")
+			} else {
+				msg = "[" + name + "] \u2713 session completed"
+			}
 			_ = notify.Send("taux", msg)
 		}
 	}

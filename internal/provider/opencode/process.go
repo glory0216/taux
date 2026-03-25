@@ -57,18 +57,3 @@ func FindProcessBySession(sessionID string) (int, error) {
 	return 0, nil
 }
 
-// IsChildOf checks whether pid is a direct child of parentPID.
-func IsChildOf(pid, parentPID int) bool {
-	if pid == parentPID {
-		return true
-	}
-	out, err := exec.Command("ps", "-o", "ppid=", "-p", strconv.Itoa(pid)).Output()
-	if err != nil {
-		return false
-	}
-	ppid, err := strconv.Atoi(strings.TrimSpace(string(out)))
-	if err != nil {
-		return false
-	}
-	return ppid == parentPID
-}

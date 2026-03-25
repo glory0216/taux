@@ -1,7 +1,6 @@
 package opencode
 
 import (
-	"os"
 	"testing"
 )
 
@@ -25,12 +24,3 @@ func TestFindProcessBySession_unknownSessionReturnsZero(t *testing.T) {
 	}
 }
 
-func TestIsChildOf_currentProcess(t *testing.T) {
-	// Current process is always a child of PID 1 (init) transitively,
-	// but direct parent check: os.Getppid() should be parent of os.Getpid()
-	child := os.Getpid()
-	parent := os.Getppid()
-	if !IsChildOf(child, parent) {
-		t.Errorf("IsChildOf(%d, %d) = false, want true", child, parent)
-	}
-}

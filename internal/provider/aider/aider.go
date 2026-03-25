@@ -105,6 +105,9 @@ func (p *Provider) GetSession(ctx context.Context, id string) (*model.SessionDet
 }
 
 // GetStatus returns a quick status summary.
+// If the session list is already cached (populated by a prior ListSession call),
+// full counts are returned. Otherwise only active-process count is returned to
+// avoid a disk scan on the hot status-bar path.
 func (p *Provider) GetStatus(ctx context.Context) (*provider.ProviderStatus, error) {
 	const cacheKey = "aider:status"
 	if cached, ok := p.cache.Get(cacheKey); ok {
@@ -114,15 +117,21 @@ func (p *Provider) GetStatus(ctx context.Context) (*provider.ProviderStatus, err
 	}
 
 	status := &provider.ProviderStatus{}
-	sessionList, err := p.ListSession(ctx, provider.Filter{})
-	if err == nil {
-		status.TotalCount = len(sessionList)
-		for _, s := range sessionList {
-			if s.Status == model.SessionActive {
-				status.ActiveCount++
+
+	if cached, ok := p.cache.Get("aider:session_list"); ok {
+		if sessionList, ok := cached.([]model.Session); ok {
+			status.TotalCount = len(sessionList)
+			for _, s := range sessionList {
+				if s.Status == model.SessionActive {
+					status.ActiveCount++
+				}
+				status.MessageCount += s.MessageCount
 			}
-			status.MessageCount += s.MessageCount
 		}
+	} else {
+		// Fast path: no disk scan, just count running processes.
+		activeList, _ := FindAiderProcess()
+		status.ActiveCount = len(activeList)
 	}
 
 	p.cache.Set(cacheKey, status)

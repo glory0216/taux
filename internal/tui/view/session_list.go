@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/glory0216/taux/internal/format"
 	"github.com/glory0216/taux/internal/model"
 )
 
@@ -131,7 +132,7 @@ func RenderSessionList(sessionList []model.Session, aliasMap map[string]string, 
 		memStr := "-"
 		cpuStr := "-"
 		if s.Status == model.SessionActive && s.RSS > 0 {
-			memStr = formatSizeShort(s.RSS)
+			memStr = format.FormatSizeShort(s.RSS)
 		}
 		if s.Status == model.SessionActive && s.CPUPercent > 0 {
 			cpuStr = fmt.Sprintf("%.1f%%", s.CPUPercent)
@@ -147,13 +148,14 @@ func RenderSessionList(sessionList []model.Session, aliasMap map[string]string, 
 			envStyle.Render(fmt.Sprintf("%-*s", colEnv, envStr)),
 			provField,
 			colProject, truncate(s.Project, colProject),
-			colModel, truncate(shortenModel(s.Model), colModel),
+			colModel, truncate(format.ShortenModel(s.Model), colModel),
 			colBranch, truncate(s.GitBranch, colBranch),
 			colMsgs, s.MessageCount,
-			colSize, formatSizeShort(s.FileSize),
+			colSize, format.FormatSizeShort(s.FileSize),
 			colMem, memStr,
+
 			colCPU, cpuStr,
-			colAge, formatAge(age),
+			colAge, format.FormatAge(age),
 		)
 
 		// Description line (indented under the row)
@@ -209,39 +211,3 @@ func truncate(s string, maxWidth int) string {
 	return string(runes[:maxWidth-1]) + "\u2026"
 }
 
-// shortenModel strips common prefixes from model names for display.
-func shortenModel(m string) string {
-	return m
-}
-
-// formatAge converts a duration to a compact human-readable string.
-func formatAge(d time.Duration) string {
-	if d < 0 {
-		d = -d
-	}
-	switch {
-	case d >= 24*time.Hour:
-		days := int(d.Hours() / 24)
-		return fmt.Sprintf("%dd", days)
-	case d >= time.Hour:
-		return fmt.Sprintf("%dh", int(d.Hours()))
-	case d >= time.Minute:
-		return fmt.Sprintf("%dm", int(d.Minutes()))
-	default:
-		return fmt.Sprintf("%ds", int(d.Seconds()))
-	}
-}
-
-// formatSizeShort formats bytes compactly.
-func formatSizeShort(bytes int64) string {
-	switch {
-	case bytes >= 1024*1024*1024:
-		return fmt.Sprintf("%.1fG", float64(bytes)/(1024*1024*1024))
-	case bytes >= 1024*1024:
-		return fmt.Sprintf("%.1fM", float64(bytes)/(1024*1024))
-	case bytes >= 1024:
-		return fmt.Sprintf("%.1fK", float64(bytes)/1024)
-	default:
-		return fmt.Sprintf("%dB", bytes)
-	}
-}
