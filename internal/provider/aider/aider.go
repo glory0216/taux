@@ -130,6 +130,8 @@ func (p *Provider) GetStatus(ctx context.Context) (*provider.ProviderStatus, err
 		}
 	} else {
 		// Fast path: no disk scan, just count running processes.
+		// TotalCount intentionally remains 0 here — a full session scan is
+		// deferred until ListSession is called (e.g. when the dashboard opens).
 		activeList, _ := FindAiderProcess()
 		status.ActiveCount = len(activeList)
 	}

@@ -45,7 +45,11 @@ func newLogsCmd(app *App) *cobra.Command {
 				return fmt.Errorf("session file not found: %s", argList[0])
 			}
 			if sessionProvider != "claude" {
-				return fmt.Errorf("taux logs is only supported for Claude sessions (this is a %s session)", sessionProvider)
+				providerLabel := sessionProvider
+				if providerLabel == "" {
+					providerLabel = "unknown"
+				}
+				return fmt.Errorf("taux logs is only supported for Claude sessions (this is a %s session)", providerLabel)
 			}
 
 			return printLogs(filePath, tail, noTools)
