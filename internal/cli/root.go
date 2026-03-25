@@ -184,7 +184,7 @@ func ensureTmuxSetup() {
 		return // already configured
 	}
 
-	newContent := replaceOrAppendBlock(string(existing), tauxBlock)
+	newContent := replaceOrAppendBlock(string(existing), buildTauxBlock())
 	if err := os.WriteFile(tmuxConfPath, []byte(newContent), 0o644); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: could not update %s: %v\n", tmuxConfPath, err)
 		return

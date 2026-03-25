@@ -16,10 +16,13 @@ const (
 	tauxBlockEnd   = "# ===== End taux ====="
 )
 
-var tauxBlock = strings.Join([]string{
+// tauxBlockLines are the tmux.conf lines that don't depend on existing config.
+// The status-right line is generated dynamically by buildTauxBlock() to avoid
+// overwriting any existing status-right the user already has.
+var tauxBlockLines = []string{
 	tauxBlockStart,
 	"set -g status-interval 10",
-	"set -g status-right '#(taux status 2>/dev/null)  %H:%M %Y-%m-%d'",
+	// status-right line inserted here by buildTauxBlock()
 	"# Active window highlight",
 	"setw -g window-status-style 'fg=colour245'",
 	"setw -g window-status-current-style 'fg=colour16,bg=colour39,bold'",
@@ -29,7 +32,34 @@ var tauxBlock = strings.Join([]string{
 	"bind S display-popup -E -w 60% -h 50% -T ' Stats ' 'bash -c \"taux get stats; read -rsn1\"'",
 	"bind P display-popup -E -w 60% -h 50% -T ' Peek ' 'bash -c \"taux peek; read -rsn1\"'",
 	tauxBlockEnd,
-}, "\n")
+}
+
+// buildTauxBlock returns the full taux tmux.conf block.
+// If tmux is running and has a non-taux status-right, the existing value is
+// preserved by prepending the taux fragment rather than replacing it.
+func buildTauxBlock() string {
+	fragment := "#(taux status 2>/dev/null)"
+	statusRight := fragment + "  %H:%M %Y-%m-%d" // default
+
+	if isTmuxRunning() {
+		if out, err := exec.Command("tmux", "show-option", "-gqv", "status-right").Output(); err == nil {
+			existing := strings.TrimSpace(string(out))
+			if existing != "" && !strings.Contains(existing, "taux status") {
+				statusRight = fragment + "  " + existing
+			}
+		}
+	}
+
+	lines := make([]string, 0, len(tauxBlockLines)+1)
+	for i, line := range tauxBlockLines {
+		lines = append(lines, line)
+		// Insert status-right after the status-interval line
+		if i == 1 {
+			lines = append(lines, "set -g status-right '"+statusRight+"'")
+		}
+	}
+	return strings.Join(lines, "\n")
+}
 
 func newSetupCmd() *cobra.Command {
 	var dryRun bool
@@ -44,6 +74,7 @@ func newSetupCmd() *cobra.Command {
 				return fmt.Errorf("get home directory: %w", err)
 			}
 			tmuxConfPath := filepath.Join(home, ".tmux.conf")
+			tauxBlock := buildTauxBlock()
 
 			if dryRun {
 				fmt.Printf("Would add to %s:\n\n%s\n", tmuxConfPath, tauxBlock)
