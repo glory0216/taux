@@ -36,6 +36,8 @@ var defaultPriceMap = map[string]TokenPrice{
 	"gemini-2.5-pro":   {Input: 1.25, Output: 10.0, CacheRead: 0.3125, CacheWrite: 4.50},
 	"gemini-2.5-flash": {Input: 0.15, Output: 0.60, CacheRead: 0.0375, CacheWrite: 1.00},
 	"gemini-2.0-flash": {Input: 0.10, Output: 0.40, CacheRead: 0.025, CacheWrite: 0.025},
+	"gemini-1.5-pro":   {Input: 1.25, Output: 5.0, CacheRead: 0.3125, CacheWrite: 4.50},
+	"gemini-1.5-flash": {Input: 0.075, Output: 0.30, CacheRead: 0.01875, CacheWrite: 1.00},
 }
 
 // dateSuffixRe matches trailing -YYYYMMDD date suffixes in model names.

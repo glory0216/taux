@@ -139,12 +139,12 @@ func ParseSession(path string) (*model.SessionDetail, error) {
 		return nil, err
 	}
 
-	// Apply cumulative token counts (last event = totals)
-	// Reasoning tokens are counted as input tokens for cost purposes
+	// Apply cumulative token counts (last event = totals).
+	// Reasoning tokens (o1/o3/o4 series) are priced at the output rate by OpenAI,
+	// so they are added to OutputTokens for accurate cost calculation.
 	detail.TokenUsage = model.TokenUsage{
-		InputTokens:  lastTokenCount.Input + lastTokenCount.Reasoning,
-		OutputTokens: lastTokenCount.Output,
-		// Codex uses cached_input for cache reads
+		InputTokens:          lastTokenCount.Input,
+		OutputTokens:         lastTokenCount.Output + lastTokenCount.Reasoning,
 		CacheReadInputTokens: lastTokenCount.CachedInput,
 	}
 

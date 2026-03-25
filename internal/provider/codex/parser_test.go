@@ -24,12 +24,13 @@ func TestParseSession_ValidJSONL(t *testing.T) {
 
 	// Token counts should use the LAST cumulative event (not sum)
 	// Last token_count: input=1000, cached_input=200, output=400, reasoning=100
-	// InputTokens = input + reasoning = 1000 + 100 = 1100
-	if detail.TokenUsage.InputTokens != 1100 {
-		t.Errorf("InputTokens = %d, want %d", detail.TokenUsage.InputTokens, 1100)
+	// Reasoning tokens are priced at the output rate (OpenAI o-series billing),
+	// so OutputTokens = output + reasoning = 400 + 100 = 500.
+	if detail.TokenUsage.InputTokens != 1000 {
+		t.Errorf("InputTokens = %d, want %d", detail.TokenUsage.InputTokens, 1000)
 	}
-	if detail.TokenUsage.OutputTokens != 400 {
-		t.Errorf("OutputTokens = %d, want %d", detail.TokenUsage.OutputTokens, 400)
+	if detail.TokenUsage.OutputTokens != 500 {
+		t.Errorf("OutputTokens = %d, want %d", detail.TokenUsage.OutputTokens, 500)
 	}
 	if detail.TokenUsage.CacheReadInputTokens != 200 {
 		t.Errorf("CacheReadInputTokens = %d, want %d", detail.TokenUsage.CacheReadInputTokens, 200)
