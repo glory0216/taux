@@ -326,8 +326,12 @@ func countAllActiveProcesses(app *App) int {
 // buildProviderSnapshot builds a snapshot from a session for persistence between polls.
 func buildProviderSnapshot(s model.Session) providerSessionSnapshot {
 	shortID := s.ShortID
-	if shortID == "" && len(s.ID) >= 6 {
-		shortID = s.ID[:6]
+	if shortID == "" {
+		if len(s.ID) >= 6 {
+			shortID = s.ID[:6]
+		} else {
+			shortID = s.ID
+		}
 	}
 	return providerSessionSnapshot{PID: s.PID, ShortID: shortID, Project: s.Project}
 }
@@ -346,6 +350,13 @@ func currentPIDSet(sessionList []model.Session) map[int]bool {
 // notifyProviderEvents sends completion notifications for non-Claude providers
 // when a previously-seen process PID disappears. Cursor is skipped because
 // its process runs persistently regardless of session activity.
+//
+// Reliability note: PID-to-session mapping is only deterministic for providers
+// that expose the session ID in process arguments (currently only Codex via
+// --resume). For Gemini, Aider, and OpenCode the mapping is positional — if
+// the session list order changes between polls (e.g. a new session is created),
+// a false-positive completion notification may fire once. This is a known
+// limitation that cannot be fixed without upstream CLI support.
 func notifyProviderEvents(ctx context.Context, app *App, prev *watchState, current *watchState) {
 	if current.ProviderSession == nil {
 		current.ProviderSession = make(map[string][]providerSessionSnapshot)
@@ -373,10 +384,12 @@ func notifyProviderEvents(ctx context.Context, app *App, prev *watchState, curre
 		}
 		current.ProviderSession[name] = snapshots
 
-		// Notify for sessions whose PID disappeared since last poll
+		// Notify for sessions whose PID disappeared since last poll.
+		// Use "taux" as app name (same as Claude) so macOS groups all taux
+		// notifications together; provider name appears in the message body.
 		for _, gone := range detectGoneSnapshots(prev.ProviderSession[name], pidSet) {
-			msg := formatCompletionMessage(gone.ShortID, gone.Project, "")
-			_ = notify.Send("taux ("+name+")", msg)
+			msg := "[" + name + "] " + formatCompletionMessage(gone.ShortID, gone.Project, "")
+			_ = notify.Send("taux", msg)
 		}
 	}
 }

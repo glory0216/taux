@@ -19,13 +19,24 @@ func TestBuildProviderSnapshot_usesPIDAndShortID(t *testing.T) {
 }
 
 func TestBuildProviderSnapshot_fallsBackToIDPrefix(t *testing.T) {
-	// ShortID empty — should truncate ID
+	// ShortID empty — should truncate ID to 6 chars
 	s := model.Session{ID: "abcdef123456", ShortID: "", Project: "proj", PID: 7}
 
 	snap := buildProviderSnapshot(s)
 
 	if snap.ShortID != "abcdef" {
 		t.Fatalf("expected ShortID 'abcdef', got %q", snap.ShortID)
+	}
+}
+
+func TestBuildProviderSnapshot_shortIDShorterThanSix(t *testing.T) {
+	// ID shorter than 6 chars — should use full ID, not empty string
+	s := model.Session{ID: "abc", ShortID: "", Project: "proj", PID: 7}
+
+	snap := buildProviderSnapshot(s)
+
+	if snap.ShortID != "abc" {
+		t.Fatalf("expected ShortID 'abc', got %q", snap.ShortID)
 	}
 }
 
