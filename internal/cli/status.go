@@ -10,15 +10,36 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/glory0216/taux/internal/config"
+	"github.com/glory0216/taux/internal/model"
 	"github.com/glory0216/taux/internal/notify"
 	"github.com/glory0216/taux/internal/provider/claude"
 	"github.com/glory0216/taux/internal/tmux"
 )
 
+// providerSessionSnapshot stores just enough info about an active non-Claude session
+// to produce a useful notification if the process disappears on the next poll.
+type providerSessionSnapshot struct {
+	PID     int    `json:"pid"`
+	ShortID string `json:"short_id"`
+	Project string `json:"project"`
+}
+
 // watchState persists active session IDs and alerted states between invocations.
 type watchState struct {
-	ActiveIDList  []string `json:"active_ids"`
-	WaitingIDList []string `json:"waiting_ids"` // sessions already alerted as waiting
+	ActiveIDList    []string                               `json:"active_ids"`
+	WaitingIDList   []string                               `json:"waiting_ids"`    // sessions already alerted as waiting
+	ProviderSession map[string][]providerSessionSnapshot   `json:"provider_session"` // non-Claude providers: name → snapshots
+}
+
+// detectGoneSnapshots returns the snapshots whose PID no longer appears in currentPIDSet.
+func detectGoneSnapshots(prev []providerSessionSnapshot, currentPIDSet map[int]bool) []providerSessionSnapshot {
+	var gone []providerSessionSnapshot
+	for _, s := range prev {
+		if !currentPIDSet[s.PID] {
+			gone = append(gone, s)
+		}
+	}
+	return gone
 }
 
 // sessionTeamInfo caches per-session team metadata to avoid repeated file reads.
@@ -160,6 +181,10 @@ func notifySessionEvent(activeList []claude.ProcessInfo, claudeDataDir string, a
 		ActiveIDList:  currentIDList,
 		WaitingIDList: currentWaitingList,
 	}
+
+	// 3) Non-Claude provider completion notifications
+	notifyProviderEvents(context.Background(), app, &prev, &current)
+
 	if data, err := json.Marshal(current); err == nil {
 		_ = os.MkdirAll(filepath.Dir(statePath), 0o755)
 		_ = os.WriteFile(statePath, data, 0o644)
@@ -296,4 +321,62 @@ func countAllActiveProcesses(app *App) int {
 		return len(activeList)
 	}
 	return status.ActiveCount
+}
+
+// buildProviderSnapshot builds a snapshot from a session for persistence between polls.
+func buildProviderSnapshot(s model.Session) providerSessionSnapshot {
+	shortID := s.ShortID
+	if shortID == "" && len(s.ID) >= 6 {
+		shortID = s.ID[:6]
+	}
+	return providerSessionSnapshot{PID: s.PID, ShortID: shortID, Project: s.Project}
+}
+
+// currentPIDSet builds a set of active PIDs from a session list (excludes PID 0).
+func currentPIDSet(sessionList []model.Session) map[int]bool {
+	set := make(map[int]bool, len(sessionList))
+	for _, s := range sessionList {
+		if s.PID > 0 {
+			set[s.PID] = true
+		}
+	}
+	return set
+}
+
+// notifyProviderEvents sends completion notifications for non-Claude providers
+// when a previously-seen process PID disappears. Cursor is skipped because
+// its process runs persistently regardless of session activity.
+func notifyProviderEvents(ctx context.Context, app *App, prev *watchState, current *watchState) {
+	if current.ProviderSession == nil {
+		current.ProviderSession = make(map[string][]providerSessionSnapshot)
+	}
+
+	for _, prov := range app.Registry.Available() {
+		name := prov.Name()
+		if name == "claude" || name == "cursor" {
+			continue
+		}
+
+		activeSessions, err := prov.ActiveSession(ctx)
+		if err != nil {
+			continue
+		}
+
+		pidSet := currentPIDSet(activeSessions)
+
+		// Build snapshot list for this poll cycle
+		var snapshots []providerSessionSnapshot
+		for _, s := range activeSessions {
+			if s.PID > 0 {
+				snapshots = append(snapshots, buildProviderSnapshot(s))
+			}
+		}
+		current.ProviderSession[name] = snapshots
+
+		// Notify for sessions whose PID disappeared since last poll
+		for _, gone := range detectGoneSnapshots(prev.ProviderSession[name], pidSet) {
+			msg := formatCompletionMessage(gone.ShortID, gone.Project, "")
+			_ = notify.Send("taux ("+name+")", msg)
+		}
+	}
 }
