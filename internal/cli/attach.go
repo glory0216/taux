@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -11,16 +12,24 @@ import (
 
 // execAttachWithDir changes to the session's project directory and execs the command.
 func execAttachWithDir(cmdStr string, argSlice []string, workDir string) error {
-	// Change to the session's project directory so claude --resume can find it
+	// Resolve binary before Chdir so a lookup failure doesn't leave the process
+	// in a different directory with a confusing error message.
+	binary, err := exec.LookPath(cmdStr)
+	if err != nil {
+		return fmt.Errorf("binary not found: %s: %w", cmdStr, err)
+	}
+	// Make the path absolute before Chdir — LookPath can return a relative
+	// path (e.g. "./claude") that would break after the directory changes.
+	if !filepath.IsAbs(binary) {
+		if abs, err := filepath.Abs(binary); err == nil {
+			binary = abs
+		}
+	}
+
 	if workDir != "" {
 		if err := os.Chdir(workDir); err != nil {
 			return fmt.Errorf("chdir to %s: %w", workDir, err)
 		}
-	}
-
-	binary, err := exec.LookPath(cmdStr)
-	if err != nil {
-		return fmt.Errorf("binary not found: %s: %w", cmdStr, err)
 	}
 
 	argv := append([]string{binary}, argSlice...)

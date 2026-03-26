@@ -142,6 +142,9 @@ func parseConversation(filePath string, noTools bool) ([]replayTurn, error) {
 			turnList = append(turnList, turns...)
 		}
 	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("read session file: %w", err)
+	}
 
 	return turnList, nil
 }

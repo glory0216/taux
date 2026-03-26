@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -32,8 +33,10 @@ func newDashboardCmd(app *App) *cobra.Command {
 // When splitTarget is set (a tmux pane ID like %3), attach splits that pane
 // instead of opening a new window.
 func runDashboard(app *App, splitTarget string) error {
+	var pendingStatus string
 	for {
-		m := tui.NewModel(app.Registry, app.Config, Version)
+		m := tui.NewModel(app.Registry, app.Config, Version, pendingStatus)
+		pendingStatus = ""
 		p := tea.NewProgram(m, tea.WithAltScreen())
 		result, err := p.Run()
 		if err != nil {
@@ -63,25 +66,52 @@ func runDashboard(app *App, splitTarget string) error {
 		}
 
 		// Handle attach request
+		providerFound := false
 		for _, prov := range app.Registry.Available() {
 			cmdStr, argSlice, workDir, err := prov.AttachSession(req.SessionID)
 			if err != nil || cmdStr == "" {
 				continue
 			}
+			providerFound = true
 
 			if isInsideTmux() {
+				var attachErr error
 				if splitTarget != "" {
-					_ = tmuxSplitAttach(cmdStr, argSlice, workDir, splitTarget)
+					// Popup mode: split the target pane, then exit so the popup
+					// closes and the user lands on the split layout.
+					newPaneID, splitErr := tmuxSplitAttach(cmdStr, argSlice, workDir, splitTarget)
+					if splitErr == nil {
+						// Select the new pane before exiting so that after
+						// display-popup restores the session state, focus is on
+						// the new pane rather than the original.
+						_ = exec.Command("tmux", "select-pane", "-t", newPaneID).Run()
+					}
+					attachErr = splitErr
 				} else {
-					_ = tmuxNewWindowAttach(cmdStr, argSlice, workDir, req.SessionID, req.Alias)
+					// Non-popup mode: open a new window, then restart the
+					// dashboard loop so this window stays alive.
+					attachErr = tmuxNewWindowAttach(cmdStr, argSlice, workDir, req.SessionID, req.Alias)
 				}
+				if attachErr != nil {
+					pendingStatus = "Attach failed: " + attachErr.Error()
+					break
+				}
+				if splitTarget != "" {
+					// Popup mode: exit to close the popup.
+					return nil
+				}
+				// Non-popup mode: fall through to restart the dashboard.
 				break
 			}
 			// Outside tmux → replace process (never returns)
 			return execAttachWithDir(cmdStr, argSlice, workDir)
 		}
 
-		// No provider could attach — just restart dashboard
+		if !providerFound {
+			pendingStatus = "No provider can attach to session " + req.SessionID[:min(6, len(req.SessionID))]
+		}
+
+		// Restart dashboard (attach failed or no provider found)
 		continue
 	}
 }
@@ -121,13 +151,21 @@ func buildShellCmd(cmdStr string, argSlice []string, workDir string) string {
 	return s
 }
 
-// tmuxSplitAttach splits the target pane horizontally and runs the attach command.
-func tmuxSplitAttach(cmdStr string, argSlice []string, workDir string, targetPane string) error {
-	cmd := exec.Command("tmux", "split-window", "-h", "-t", targetPane, buildShellCmd(cmdStr, argSlice, workDir))
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+// tmuxSplitAttach splits the target pane horizontally, runs the attach command,
+// and returns the new pane ID so the caller can select it before closing.
+func tmuxSplitAttach(cmdStr string, argSlice []string, workDir string, targetPane string) (string, error) {
+	// -d: don't switch focus during split (popup is still on top)
+	// -P -F "#{pane_id}": print the new pane ID so we can select it afterward
+	out, err := exec.Command("tmux", "split-window",
+		"-h", "-d",
+		"-t", targetPane,
+		"-P", "-F", "#{pane_id}",
+		buildShellCmd(cmdStr, argSlice, workDir),
+	).Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
 }
 
 // tmuxNewWindowAttach opens a new tmux window with the attach command.

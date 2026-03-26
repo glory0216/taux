@@ -186,14 +186,15 @@ func (m *Model) GetReplayRequest() *ReplayRequest {
 }
 
 // NewModel creates a new TUI model.
-func NewModel(registry *provider.Registry, cfg *config.Config, version string) *Model {
+func NewModel(registry *provider.Registry, cfg *config.Config, version string, initialStatus string) *Model {
 	configDir := filepath.Dir(config.ConfigPath())
 	return &Model{
-		registry: registry,
-		cfg:      cfg,
-		version:  version,
-		keys:     defaultKeyMap,
-		aliasMap: config.LoadAlias(configDir),
+		registry:   registry,
+		cfg:        cfg,
+		version:    version,
+		keys:       defaultKeyMap,
+		aliasMap:   config.LoadAlias(configDir),
+		statusText: initialStatus,
 	}
 }
 

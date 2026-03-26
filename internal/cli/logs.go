@@ -76,7 +76,7 @@ func printLogs(filePath string, tail int, noTools bool) error {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	scanner.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
 
 	// Use a ring buffer when tail > 0 so we never hold more than tail entries
 	// in memory regardless of how large the session file is.
@@ -132,6 +132,9 @@ func printLogs(filePath string, tail int, noTools bool) error {
 				addEntry(e)
 			}
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("read session file: %w", err)
 	}
 
 	if useRing {

@@ -44,16 +44,22 @@ func newCleanCmd(app *App) *cobra.Command {
 			}
 
 			var totalFreed int64
+			var anyFailed bool
 			for _, p := range app.Registry.Available() {
 				freed, err := p.CleanSession(ctx, duration.String())
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Warning: %s clean failed: %v\n", p.Name(), err)
+					anyFailed = true
 					continue
 				}
 				totalFreed += freed
 			}
 
-			fmt.Printf("Cleaned %s of session data.\n", formatSize(totalFreed))
+			if anyFailed {
+				fmt.Fprintf(os.Stderr, "Note: some providers failed; %s freed from successful providers.\n", formatSize(totalFreed))
+			} else {
+				fmt.Printf("Cleaned %s of session data.\n", formatSize(totalFreed))
+			}
 			return nil
 		},
 	}

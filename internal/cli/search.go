@@ -22,7 +22,9 @@ func newSearchCmd(app *App) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, argList []string) error {
 			query := argList[0]
-			ctx := context.Background()
+
+			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+			defer cancel()
 
 			sessionList, err := app.Registry.AllSession(ctx, provider.Filter{})
 			if err != nil {
@@ -30,8 +32,20 @@ func newSearchCmd(app *App) *cobra.Command {
 			}
 
 			found := 0
+			timedOut := ctx.Err() != nil // AllSession may have exhausted the deadline
 			now := time.Now()
 			for _, s := range sessionList {
+				// Check deadline between files — SearchSession itself is not
+				// interruptible, but we stop scheduling new files once time is up.
+				select {
+				case <-ctx.Done():
+					timedOut = true
+				default:
+				}
+				if timedOut {
+					break
+				}
+
 				if limit > 0 && found >= limit {
 					break
 				}
@@ -69,7 +83,9 @@ func newSearchCmd(app *App) *cobra.Command {
 				found++
 			}
 
-			if found == 0 {
+			if timedOut {
+				fmt.Println("(search timed out after 30s — showing partial results)")
+			} else if found == 0 {
 				fmt.Println("No matches found.")
 			}
 

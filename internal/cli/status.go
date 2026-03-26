@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -93,6 +95,23 @@ func notifySessionEvent(activeList []claude.ProcessInfo, claudeDataDir string, a
 	configDir := filepath.Dir(config.ConfigPath())
 	statePath := filepath.Join(configDir, ".watch-state.json")
 
+	// Hold an exclusive flock for the entire read-modify-write cycle.
+	// tmux fires `taux status` every ~10s; without a lock, concurrent
+	// processes can race on the file and drop notifications or alias data.
+	_ = os.MkdirAll(configDir, 0o755)
+	stateFile, err := os.OpenFile(statePath, os.O_RDWR|os.O_CREATE, 0o644)
+	if err == nil {
+		defer stateFile.Close()
+		if ferr := syscall.Flock(int(stateFile.Fd()), syscall.LOCK_EX); ferr != nil {
+			// Filesystem does not support advisory locks (e.g. NFS).
+			// Continue without a lock — notifications may occasionally duplicate
+			// but this is preferable to silently dropping all notifications.
+			fmt.Fprintf(os.Stderr, "taux: flock: %v\n", ferr)
+		} else {
+			defer syscall.Flock(int(stateFile.Fd()), syscall.LOCK_UN) //nolint:errcheck
+		}
+	}
+
 	// Build current active state
 	currentIDSet := make(map[string]bool, len(activeList))
 	var currentIDList []string
@@ -103,10 +122,12 @@ func notifySessionEvent(activeList []claude.ProcessInfo, claudeDataDir string, a
 		}
 	}
 
-	// Read previous state
+	// Read previous state (from locked file)
 	var prev watchState
-	if data, err := os.ReadFile(statePath); err == nil {
-		_ = json.Unmarshal(data, &prev)
+	if stateFile != nil {
+		if data, err := io.ReadAll(stateFile); err == nil {
+			_ = json.Unmarshal(data, &prev)
+		}
 	}
 	prevWaitingSet := make(map[string]bool)
 	for _, id := range prev.WaitingIDList {
@@ -185,9 +206,9 @@ func notifySessionEvent(activeList []claude.ProcessInfo, claudeDataDir string, a
 	// 3) Non-Claude provider completion notifications
 	notifyProviderEvents(context.Background(), app, &prev, &current)
 
-	if data, err := json.Marshal(current); err == nil {
-		_ = os.MkdirAll(filepath.Dir(statePath), 0o755)
-		_ = os.WriteFile(statePath, data, 0o644)
+	if data, err := json.Marshal(current); err == nil && stateFile != nil {
+		_ = stateFile.Truncate(0)
+		_, _ = stateFile.WriteAt(data, 0)
 	}
 }
 

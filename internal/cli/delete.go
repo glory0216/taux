@@ -44,13 +44,21 @@ To archive the conversation before deleting, use 'memorize' instead.`,
 				}
 			}
 
+			var lastErr error
 			for _, p := range app.Registry.Available() {
 				if err := p.DeleteSession(ctx, fullID); err == nil {
 					fmt.Printf("Deleted session %s\n", shortID)
 					return nil
+				} else {
+					lastErr = err
 				}
 			}
 
+			// Distinguish "already gone" from a real failure so the user
+			// isn't confused if another process deleted it first.
+			if lastErr != nil && strings.Contains(lastErr.Error(), "not found") {
+				return fmt.Errorf("session %s not found (already deleted?)", shortID)
+			}
 			return fmt.Errorf("failed to delete session %s", shortID)
 		},
 	}
